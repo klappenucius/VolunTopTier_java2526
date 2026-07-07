@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "Community Garden",
+    "location": "Springfield",
+    "startDate": "2025-03-01",
+    "endDate": "2025-06-15",
+    "durationHours": 120
+  },
+  {
+    "id": 2,
+    "name": "Beach Cleanup",
+    "location": "Miami",
+    "startDate": "2025-04-10",
+    "endDate": "2025-04-20",
+    "durationHours": 40
+  },
+  {
+    "id": 3,
+    "name": "Food Drive",
+    "location": "New York",
+    "startDate": "2025-01-05",
+    "endDate": "2025-02-01",
+    "durationHours": 60
+  },
+  {
+    "id": 4,
+    "name": "Park Restoration",
+    "location": "Denver",
+    "startDate": "2025-07-01",
+    "endDate": "2025-09-30",
+    "durationHours": 200
+  },
+  {
+    "id": 5,
+    "name": "School Supply Drive",
+    "location": "Seattle",
+    "startDate": "2025-05-15",
+    "endDate": "2025-07-15",
+    "durationHours": 100
+  },
+  {
+    "id": 6,
+    "name": "Senior Center Renovation",
+    "location": "Austin",
+    "startDate": "2025-02-10",
+    "endDate": "2025-05-10",
+    "durationHours": 180
+  },
+  {
+    "id": 7,
+    "name": "Wildlife Shelter Assistance",
+    "location": "Boise",
+    "startDate": "2025-09-01",
+    "endDate": "2025-10-15",
+    "durationHours": 75
+  },
+  {
+    "id": 8,
+    "name": "Homeless Outreach Program",
+    "location": "Chicago",
+    "startDate": "2025-03-20",
+    "endDate": "2025-05-01",
+    "durationHours": 90
+  },
+  {
+    "id": 9,
+    "name": "Library Upgrade Project",
+    "location": "Portland",
+    "startDate": "2025-06-01",
+    "endDate": "2025-08-01",
+    "durationHours": 140
+  },
+  {
+    "id": 10,
+    "name": "Forest Trail Cleanup",
+    "location": "Flagstaff",
+    "startDate": "2025-04-01",
+    "endDate": "2025-04-18",
+    "durationHours": 35
+  }
+]

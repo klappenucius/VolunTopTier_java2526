@@ -59,7 +59,7 @@ public class Project extends DBitem {
     }
 
     public static class ProjectBuilder {
-        private final String id;
+        private final int id;
         private final String name;
         private final Integer totalHours;
         private final LocalDate startDate;

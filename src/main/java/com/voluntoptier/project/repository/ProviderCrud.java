@@ -1,4 +1,6 @@
 package com.voluntoptier.project.repository;
 
-public class ProviderCrud {
+import com.voluntoptier.project.entities.Provider;
+
+public final class ProviderCrud implements Crud{
 }

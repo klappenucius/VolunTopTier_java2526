@@ -5,7 +5,7 @@ public class Incentive extends DBitem {
     protected Provider provider;
     protected String description;
 
-    public Incentive(String id, String name, String description) {
+    public Incentive(int id, String name, String description) {
         super(id);
         this.name = name;
         this.description = description;

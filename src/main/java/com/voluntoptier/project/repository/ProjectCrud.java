@@ -1,4 +1,6 @@
 package com.voluntoptier.project.repository;
 
-public class ProjectCrud {
+import com.voluntoptier.project.entities.Project;
+
+public final class ProjectCrud implements Crud{
 }

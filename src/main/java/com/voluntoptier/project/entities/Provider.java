@@ -6,7 +6,7 @@ public class Provider extends DBitem{
     protected String contact;
     protected String oib;
 
-    public Provider(String id, String name, String contact, String oib) {
+    public Provider(int id, String name, String contact, String oib) {
         super(id);
         this.name = name;
         this.contact = contact;

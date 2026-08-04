@@ -122,5 +122,5 @@ public final class IncentiveCrud implements Crud{
         } catch (SQLException e) {
             throw new RuntimeException("Error deleting incentive: " + e.getMessage(), e);
         }
-    };
+    }
 }

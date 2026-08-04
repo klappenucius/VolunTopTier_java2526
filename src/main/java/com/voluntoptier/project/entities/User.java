@@ -2,7 +2,7 @@ package com.voluntoptier.project.entities;
 
 import java.time.LocalDate;
 
-public class User {
+public class User extends DBitem {
     protected String firstName;
     protected String lastName;
     protected String oib;
@@ -76,7 +76,8 @@ public class User {
         this.totalHoursWorked = totalHoursWorked;
     }
 
-    public User(String firstName, String lastName, String oib, LocalDate dateOfBirth, Address address, String email, Role role) {
+    public User(int id, String firstName, String lastName, String oib, LocalDate dateOfBirth, Address address, String email, Role role) {
+        super(id);
         this.firstName = firstName;
         this.lastName = lastName;
         this.oib = oib;

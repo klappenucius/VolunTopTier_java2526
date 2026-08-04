@@ -69,7 +69,7 @@ public class Project extends DBitem {
         private Address address;
         private Integer hoursWorked = 0;
 
-        public ProjectBuilder(String id, String name, Integer totalHours, LocalDate startDate, LocalDate endDate, int volunteersNeeded) {
+        public ProjectBuilder(int id, String name, Integer totalHours, LocalDate startDate, LocalDate endDate, int volunteersNeeded) {
             this.id = id;
             this.name = name;
             this.totalHours = totalHours;

@@ -6,13 +6,13 @@ public class Address extends DBitem {
 
     protected String houseNumber;
 
-    protected int postalCode;
+    protected String postalCode;
 
     protected String city;
 
     protected String country;
 
-    public Address(String id, String street, String houseNumber, int postalCode, String city, String country) {
+    public Address(int id, String street, String houseNumber, String postalCode, String city, String country) {
         super(id);
         this.street = street;
         this.houseNumber = houseNumber;
@@ -37,11 +37,11 @@ public class Address extends DBitem {
         this.houseNumber = houseNumber;
     }
 
-    public int getPostalCode() {
+    public String getPostalCode() {
         return postalCode;
     }
 
-    public void setPostalCode(int postalCode) {
+    public void setPostalCode(String postalCode) {
         this.postalCode = postalCode;
     }
 

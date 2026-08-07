@@ -1,20 +1,24 @@
 package com.voluntoptier.project.entities;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class IncentiveAssignment extends DBitem{
     protected Incentive incentive;
     protected Project project;
-    protected LocalDateTime assignmentDateTime;
+    protected LocalDate assignmentDate;
+    protected LocalTime assignmentTime;
     protected User assignedBy;
     protected int hoursNeeded;
 
-    public IncentiveAssignment(String id, Incentive incentive, Project project, int hoursNeeded) {
+    public IncentiveAssignment(int id, LocalDate assignmentDate, LocalTime assignmentTime, Incentive incentive, Project project, User assignedBy, int hoursNeeded) {
         super(id);
         this.incentive = incentive;
         this.project = project;
-        this.assignmentDateTime = LocalDateTime.now();
-        //this.assignedBy
+        this.assignmentDate = assignmentDate;
+        this.assignmentTime = assignmentTime;
+        this.assignedBy = assignedBy;
         this.hoursNeeded = hoursNeeded;
     }
 
@@ -26,12 +30,20 @@ public class IncentiveAssignment extends DBitem{
         this.incentive = incentive;
     }
 
-    public LocalDateTime getAssignmentDateTime() {
-        return assignmentDateTime;
+    public LocalDate getAssignmentDate() {
+        return assignmentDate;
     }
 
-    public void setAssignmentDateTime(LocalDateTime assignmentDateTime) {
-        this.assignmentDateTime = assignmentDateTime;
+    public void setAssignmentDate(LocalDate assignmentDate) {
+        this.assignmentDate = assignmentDate;
+    }
+
+    public LocalTime getAssignmentTime() {
+        return assignmentTime;
+    }
+
+    public void setAssignmentTime(LocalTime assignmentTime) {
+        this.assignmentTime = assignmentTime;
     }
 
     public Project getProject() {

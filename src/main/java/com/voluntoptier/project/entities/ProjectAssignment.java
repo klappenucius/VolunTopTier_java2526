@@ -18,11 +18,11 @@ public class ProjectAssignment extends DBitem{
 
     protected HoursWorked hoursWorked;
 
-    public ProjectAssignment(String id, Project project, User user, int expectedHours, HoursWorked hoursWorked) {
+    public ProjectAssignment(int id, LocalDate date, LocalTime time, User assignedby, Project project, User user, int expectedHours, HoursWorked hoursWorked) {
         super(id);
-        this.date = LocalDate.now();
-        this.time = LocalTime.now();
-        //this.assignedby = assignedby;
+        this.date = date;
+        this.time = time;
+        this.assignedby = assignedby;
         this.project = project;
         this.user = user;
         this.expectedHours = expectedHours;

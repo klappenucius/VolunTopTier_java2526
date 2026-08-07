@@ -1,9 +1,6 @@
 package com.voluntoptier.project.repository;
 
-import com.voluntoptier.project.entities.Project;
-import com.voluntoptier.project.entities.User;
-import com.voluntoptier.project.entities.Address;
-import com.voluntoptier.project.entities.DBitem;
+import com.voluntoptier.project.entities.*;
 
 import java.sql.*;
 
@@ -11,6 +8,7 @@ public final class UserCrud implements Crud{
 
     private final Connection connection;
     private final AddressCrud addressCrud;
+    private HoursWorked hoursWorked;
 
     public UserCrud(Connection connection, AddressCrud addressCrud) {
         this.connection = connection;
@@ -22,15 +20,19 @@ public final class UserCrud implements Crud{
             throw new IllegalArgumentException("Expected a User, got: " + item.getClass());
         }
 
-        String insertSql = "INSERT INTO projects (firstName, lastName, oib, email, hoursWorked, address_id) VALUES (?, ?, ?, ?, ?, ?)";
+        String insertSql = "INSERT INTO users (firstName, lastName, username, oib, dateOfBirth, email, address_id, role, approvedHours, pendingApproval) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement prepStmt = connection.prepareStatement(insertSql)) {
             prepStmt.setString(1, user.getFirstName());
             prepStmt.setString(2, user.getLastName());
-            prepStmt.setString(3, user.getOib());
-            prepStmt.setString(4, user.getEmail());
-            prepStmt.setInt(5, user.getTotalHoursWorked().approvedHours());
-            prepStmt.setInt(6, user.getAddress().getId());
+            prepStmt.setString(3, user.getUsername());
+            prepStmt.setString(4, user.getOib());
+            prepStmt.setDate(5, Date.valueOf(user.getDateOfBirth()));
+            prepStmt.setString(6, user.getEmail());
+            prepStmt.setInt(7, user.getAddress().getId());
+            prepStmt.setString(8, user.getRole().name());
+            prepStmt.setInt(9, user.getTotalHoursWorked().approvedHours());
+            prepStmt.setInt(10, user.getTotalHoursWorked().pendingApproval());
 
             int affectedRows = prepStmt.executeUpdate();
 
@@ -50,8 +52,8 @@ public final class UserCrud implements Crud{
 
     public DBitem getById(int id) {
 
-        String selectSql = "SELECT * FROM projects WHERE id = ?";
-        Project resultProject = null;
+        String selectSql = "SELECT * FROM users WHERE id = ?";
+        User resultUser = null;
 
         try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
             prepStmt.setInt(1, id);
@@ -59,17 +61,26 @@ public final class UserCrud implements Crud{
             try(ResultSet selectResults = prepStmt.executeQuery()) {
                 if (selectResults.next()) {
                     Address address = (Address) addressCrud.getById(selectResults.getInt("address_id"));
+                    HoursWorked hoursWokred = new HoursWorked(
+                            selectResults.getInt("approvedHours"),
+                            selectResults.getInt("pendingApproval")
+                    );
+                    Role role = Role.valueOf(selectResults.getString("role"));
 
-                    resultProject = new Project.ProjectBuilder(
+                    resultUser = new User(
                             selectResults.getInt("id"),
-                            selectResults.getString("name"),
-                            selectResults.getInt("totalHours"),
-                            selectResults.getDate("startDate").toLocalDate(),
-                            selectResults.getDate("endDate").toLocalDate(),
-                            selectResults.getInt("volunteersNeeded"))
-                            .address(address)
-                            .hoursWorked(selectResults.getInt("hoursWorked"))
-                            .build();
+                            selectResults.getString("firstName"),
+                            selectResults.getString("lastName"),
+                            selectResults.getString("username"),
+                            selectResults.getString("oib"),
+                            selectResults.getDate("dateOfBirth").toLocalDate(),
+                            address,
+                            selectResults.getString("email"),
+                            role
+                    );
+
+                    resultUser.setTotalHoursWorked(hoursWorked);
+
                 } else {
                     throw new RuntimeException("Creating user failed, no ID obtained.");
                 }
@@ -77,7 +88,7 @@ public final class UserCrud implements Crud{
         }  catch (SQLException e) {
             throw new RuntimeException("Error adding user: " + e.getMessage(), e);
         }
-        return resultProject;
+        return resultUser;
     }
 
     public boolean update (DBitem item) {
@@ -86,17 +97,22 @@ public final class UserCrud implements Crud{
             throw new IllegalArgumentException("Expected a User, got: " + item.getClass());
         }
 
-        String updateSql = "UPDATE projects SET firstName = ?, lastName = ?, oib = ?, email = ?, hoursWorked = ?, address_id = ? WHERE id = ?";
+        String updateSql = "UPDATE users SET firstName = ?, lastName = ?, username = ?, oib = ?, dateOfBirth = ?, email = ?, address_id = ?, role = ?, approvedHours = ?, pendingApproval = ? WHERE id = ?";
+
 
         try (PreparedStatement prepStmt = connection.prepareStatement(updateSql)) {
 
             prepStmt.setString(1, user.getFirstName());
             prepStmt.setString(2, user.getLastName());
-            prepStmt.setString(3, user.getOib());
-            prepStmt.setString(4, user.getEmail());
-            prepStmt.setInt(5, user.getTotalHoursWorked().approvedHours());
-            prepStmt.setInt(6, user.getAddress().getId());
-            prepStmt.setInt(7, user.getId());
+            prepStmt.setString(3, user.getUsername());
+            prepStmt.setString(4, user.getOib());
+            prepStmt.setDate(5, Date.valueOf(user.getDateOfBirth()));
+            prepStmt.setString(6, user.getEmail());
+            prepStmt.setInt(7, user.getAddress().getId());
+            prepStmt.setString(8, user.getRole().name());
+            prepStmt.setInt(9, user.getTotalHoursWorked().approvedHours());
+            prepStmt.setInt(10, user.getTotalHoursWorked().pendingApproval());
+            prepStmt.setInt(11, user.getId());
 
             int affectedRows = prepStmt.executeUpdate();
 

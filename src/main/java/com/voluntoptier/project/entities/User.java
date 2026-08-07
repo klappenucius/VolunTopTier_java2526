@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public class User extends DBitem {
     protected String firstName;
     protected String lastName;
+    protected String username;
     protected String oib;
     protected LocalDate dateOfBirth;
     protected Address address;
@@ -26,6 +27,14 @@ public class User extends DBitem {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getOib() {
@@ -76,10 +85,11 @@ public class User extends DBitem {
         this.totalHoursWorked = totalHoursWorked;
     }
 
-    public User(int id, String firstName, String lastName, String oib, LocalDate dateOfBirth, Address address, String email, Role role) {
+    public User(int id, String firstName, String lastName, String username, String oib, LocalDate dateOfBirth, Address address, String email, Role role) {
         super(id);
         this.firstName = firstName;
         this.lastName = lastName;
+        this.username = username;
         this.oib = oib;
         this.dateOfBirth = dateOfBirth;
         this.address = address;

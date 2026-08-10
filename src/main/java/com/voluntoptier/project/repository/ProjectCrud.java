@@ -3,13 +3,15 @@ package com.voluntoptier.project.repository;
 import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Project;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class ProjectCrud implements Crud{
 
-    private final Connection connection;
-    private final AddressCrud addressCrud;
+    private Connection connection;
+    private AddressCrud addressCrud;
 
     public ProjectCrud(Connection connection, AddressCrud addressCrud) {
         this.connection = connection;

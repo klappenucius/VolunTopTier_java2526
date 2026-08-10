@@ -1,11 +1,13 @@
 package com.voluntoptier.project.repository;
 
 import com.voluntoptier.project.entities.*;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class ProjectAssignmentCrud implements Crud{
-    private final Connection connection;
+    private Connection connection;
     private final UserCrud userCrud;
     private final ProjectCrud projectCrud;
 

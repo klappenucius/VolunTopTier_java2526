@@ -1,16 +1,18 @@
 package com.voluntoptier.project.repository;
 
 import com.voluntoptier.project.entities.*;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class IncentiveAssignmentCrud implements Crud {
-    private final Connection connection;
+    private Connection connection;
     private final IncentiveCrud incentiveCrud;
     private final ProjectCrud projectCrud;
     private final UserCrud userCrud;
 
-    public IncentiveAssignmentCrud(Connection connection, IncentiveCrud incentiveCrud, ProjectCrud projectCrud, UserCrud userCrud) {
+    public IncentiveAssignmentCrud(Connection connection, IncentiveCrud incentiveCrud, ProjectCrud projectCrud, UserCrud userCrud){
         this.connection = connection;
         this.incentiveCrud = incentiveCrud;
         this.projectCrud = projectCrud;

@@ -3,14 +3,16 @@ package com.voluntoptier.project.repository;
 import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Provider;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class ProviderCrud implements Crud{
-    private final Connection connection;
+    private Connection connection;
     private final AddressCrud addressCrud;
 
-    public ProviderCrud(Connection connection, AddressCrud addressCrud) {
+    public ProviderCrud(Connection connection, AddressCrud addressCrud){
         this.connection = connection;
         this.addressCrud = addressCrud;
     }

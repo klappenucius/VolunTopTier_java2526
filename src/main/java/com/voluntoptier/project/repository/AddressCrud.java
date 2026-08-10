@@ -2,14 +2,16 @@ package com.voluntoptier.project.repository;
 
 import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Address;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class AddressCrud implements Crud{
 
-    private final Connection connection;
+    private Connection connection;
 
-    public AddressCrud(Connection connection) {
+    public AddressCrud(Connection connection){
         this.connection = connection;
     }
 

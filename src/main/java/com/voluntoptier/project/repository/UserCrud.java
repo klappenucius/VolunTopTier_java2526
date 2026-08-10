@@ -1,16 +1,18 @@
 package com.voluntoptier.project.repository;
 
 import com.voluntoptier.project.entities.*;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class UserCrud implements Crud{
 
-    private final Connection connection;
+    private Connection connection;
     private final AddressCrud addressCrud;
     private HoursWorked hoursWorked;
 
-    public UserCrud(Connection connection, AddressCrud addressCrud) {
+    public UserCrud(Connection connection, AddressCrud addressCrud){
         this.connection = connection;
         this.addressCrud = addressCrud;
     }

@@ -2,14 +2,16 @@ package com.voluntoptier.project.repository;
 
 import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Incentive;
+import com.voluntoptier.project.utils.DatabaseUtil;
 
+import java.io.IOException;
 import java.sql.*;
 
 public final class IncentiveCrud implements Crud{
 
-    private final Connection connection;
+    private Connection connection;
 
-    public IncentiveCrud(Connection connection) {
+    public IncentiveCrud(Connection connection){
         this.connection = connection;
     }
 

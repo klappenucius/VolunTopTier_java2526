@@ -11,7 +11,7 @@ public class DatabaseUtil {
 
     private static final String DATABASE_FILE = "database.properties";
 
-    private static Connection connectToDatabase() throws SQLException, IOException {
+    public static Connection connectToDatabase() throws SQLException, IOException {
         try (var reader = new FileReader(DATABASE_FILE)) {
             var properties = new Properties();
             properties.load(reader);

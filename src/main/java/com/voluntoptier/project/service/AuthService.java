@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 public class AuthService {
 
-
     private String credentialsFileName;
 
     private final Map<String, String> usersCreds;

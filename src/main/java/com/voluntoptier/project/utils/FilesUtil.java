@@ -16,4 +16,14 @@ public class FilesUtil {
            return credentialsFilePath.toString();
         }
     }
+
+    public static String getChangeLogFilePath() throws IOException {
+        try (var reader = new FileReader(PROPERTIES_FILE)) {
+            var properties = new Properties();
+            properties.load(reader);
+
+            var credentialsFilePath = properties.getProperty("changeLog");
+            return credentialsFilePath.toString();
+        }
+    }
 }

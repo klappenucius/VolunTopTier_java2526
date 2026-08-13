@@ -5,6 +5,7 @@ import com.voluntoptier.project.entities.Project;
 import com.voluntoptier.project.repository.ProjectCrud;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -84,9 +85,9 @@ public class ProjectService {
         // compare each value between the existingProject and the incomingProject - if there is a change >
         // save it as 1 change in a list of changes
 
-        List<Change> changes = null;
+        List<Change> changes = new ArrayList<>();;
 
-        if(!existingProject.getName().equals(incomingProject)) {
+        if(!existingProject.getName().equals(incomingProject.getName())) {
             changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "name", existingProject.getName(), incomingProject.getName(), changedBy));
         }
         // calling a separate AddressService for the address

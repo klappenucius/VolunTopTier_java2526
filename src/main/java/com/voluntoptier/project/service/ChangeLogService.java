@@ -16,7 +16,7 @@ public class ChangeLogService {
         this.file = new File(this.changeLogFileName);
     }
 
-    private void logChange (Change change) {
+    public void logChange (Change change) {
         ChangeLog loggedChangesList = deserializeAndloadChanges();
         loggedChangesList.add(change);
         serializeAndSaveChanges(loggedChangesList);

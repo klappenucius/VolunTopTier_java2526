@@ -84,7 +84,7 @@ public class ProjectService {
         // compare each value between the existingProject and the incomingProject - if there is a change >
         // save it as 1 change in a list of changes
 
-        List<Change> changes;
+        List<Change> changes = null;
 
         if(!existingProject.getName().equals(incomingProject)) {
             changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "name", existingProject.getName(), incomingProject.getName(), changedBy));
@@ -105,25 +105,27 @@ public class ProjectService {
         if(!(existingProject.getVolunteersNeeded() == incomingProject.getVolunteersNeeded())) {
             changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "volunteers needed", String.valueOf(existingProject.getVolunteersNeeded()), String.valueOf(incomingProject.getVolunteersNeeded()), changedBy));
         }
+        projectCrud.update(incomingProject);
 
-
-
-
-
-
-        // in the end, call crud.update and passon incomingProject
-
-
-        // 1. the actual change happens first
-        projectCrud.update(project);
-
-        // 2. only log entries for a change that has already been persisted
         for (Change change : changes) {
             logTheChange(change);
         }
 
-        return project;
+        return incomingProject;
     }
 
+    public boolean deleteProject(int id, String changedBy) {
+        Project existing = fetchProject(id);
+
+        boolean deleted = projectCrud.delete(id);
+
+        if (deleted) {
+            logTheChange(new Change(
+                    ENTITY_TYPE, id, "DELETE",
+                    null, existing.toString(), null, changedBy));
+        }
+
+        return deleted;
+    }
 
 }

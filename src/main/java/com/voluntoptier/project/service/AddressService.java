@@ -1,49 +1,45 @@
 package com.voluntoptier.project.service;
 
+import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.Change;
 import com.voluntoptier.project.entities.User;
+import com.voluntoptier.project.repository.AddressCrud;
 import com.voluntoptier.project.repository.UserCrud;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class UserService {
-    private static final String ENTITY_TYPE = "User";
+public class AddressService {
 
-    private final UserCrud userCrud;
+    private static final String ENTITY_TYPE = "Address";
+
+    private final AddressCrud addressCrud;
     private final ChangeLogService changeLogService;
 
-    public UserService(UserCrud userCrud, ChangeLogService changeLogService) {
-        this.userCrud = userCrud;
+    public AddressService(AddressCrud addressCrud, ChangeLogService changeLogService) {
+        this.addressCrud = addressCrud;
         this.changeLogService = changeLogService;
     }
 
-    private void validate(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("User cannot be null");
+    private void validate(Address address) {
+        if (address == null) {
+            throw new IllegalArgumentException("Address cannot be null");
         }
-        if (user.getFirstName() == null || user.getFirstName().isBlank()) {
-            throw new IllegalArgumentException("First name is required");
+        if (address.getStreet() == null || address.getStreet().isBlank()) {
+            throw new IllegalArgumentException("Street is required");
         }
-        if (user.getLastName() == null || user.getLastName().isBlank()) {
-            throw new IllegalArgumentException("Last name is required");
+        if (address.getHouseNumber() == null || address.getHouseNumber().isBlank()) {
+            throw new IllegalArgumentException("House number is required");
         }
-        if (user.getUsername() == null || user.getUsername().isBlank()) {
-            throw new IllegalArgumentException("username is required");
+        if (address.getPostalCode() == null || address.getPostalCode().isBlank()) {
+            throw new IllegalArgumentException("Postal code is required");
         }
-        if (user.getOib() == null || user.getOib().isBlank()) {
-            throw new IllegalArgumentException("Oib is required");
+        if (address.getCity() == null || address.getCity().isBlank()) {
+            throw new IllegalArgumentException("City is required");
         }
-        if (user.getDateOfBirth() == null) {
-            throw new IllegalArgumentException("Date of birth is required");
-        }
-        // pending AddressService
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (user.getTotalHoursWorked().pendingApproval() < 0 || user.getTotalHoursWorked().approvedHours() < 0) {
-            throw new IllegalArgumentException("Booked hours cannot be negative");
+        if (address.getCountry() == null || address.getCountry().isBlank()) {
+            throw new IllegalArgumentException("Country is required");
         }
     }
 
@@ -57,10 +53,10 @@ public class UserService {
         }
     }
 
-    public User createUser(User user, String changedBy) {
-        validate(user);
+    public Address createAddress(Address address, String changedBy) {
+        validate(address);
 
-        User created = (User) userCrud.add(user);
+        Address created = (Address) addressCrud.add(address);
 
         logTheChange(new Change(
                 ENTITY_TYPE, created.getId(), "CREATE",

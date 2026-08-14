@@ -2,6 +2,7 @@ package com.voluntoptier.project.service;
 
 import com.voluntoptier.project.entities.Change;
 import com.voluntoptier.project.entities.User;
+import com.voluntoptier.project.repository.AddressCrud;
 import com.voluntoptier.project.repository.UserCrud;
 
 import java.util.ArrayList;
@@ -85,12 +86,13 @@ public class UserService {
         // compare each value between the existingProject and the incomingProject - if there is a change >
         // save it as 1 change in a list of changes
 
-        List<Change> changes = new ArrayList<>();;
+        List<Change> changes = new ArrayList<>();
+        AddressService addressService = new AddressService (new AddressCrud()) ;
 
         if(!existingUser.getFirstName().equals(incomingUser.getFirstName())) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "first name", existingUser.getFirstName(), incomingUser.getFirstName(), changedBy));
         }
-        // calling a separate AddressService for the address
+        if(!existingUser.getAddress().equals(incomingUser.getAddress())) {addressService.isExisting()}
         if(!existingUser.getLastName().equals(incomingUser.getLastName())) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "last name", existingUser.getFirstName(), incomingUser.getLastName(), changedBy));
         }

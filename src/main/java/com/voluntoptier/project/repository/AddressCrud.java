@@ -116,4 +116,33 @@ public final class AddressCrud implements Crud{
             throw new RuntimeException("Error deleting address: " + e.getMessage(), e);
         }
     }
+
+    public Address isExisting (Address incomingAddress) {
+
+        String selectSql = "SELECT * FROM addresses WHERE street=?, houseNumber=?, postalCode=?, city=?, country=?";
+
+        try(PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
+
+            prepStmt.setString(1, incomingAddress.getStreet());
+            prepStmt.setString(2, incomingAddress.getHouseNumber());
+            prepStmt.setString(3, incomingAddress.getPostalCode());
+            prepStmt.setString(4, incomingAddress.getCity());
+            prepStmt.setString(5, incomingAddress.getCountry());
+
+            try (ResultSet selectResults = prepStmt.executeQuery()) {
+                if(selectResults.next()) {
+                    incomingAddress = (Address) getById(selectResults.getInt("id"));
+                    incomingAddress.setExistingFlag(true);
+                } //else {
+                    //add(incomingAddress);
+                    //return false;
+                //}
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching address: " + e.getMessage(), e);
+        }
+
+    return incomingAddress;
+    }
 }

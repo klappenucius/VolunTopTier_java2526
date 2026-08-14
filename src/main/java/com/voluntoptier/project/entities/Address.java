@@ -12,6 +12,8 @@ public class Address extends DBitem {
 
     protected String country;
 
+    protected boolean isExistingFlag;
+
     public Address(int id, String street, String houseNumber, String postalCode, String city, String country) {
         super(id);
         this.street = street;
@@ -19,6 +21,7 @@ public class Address extends DBitem {
         this.postalCode = postalCode;
         this.city = city;
         this.country = country;
+        this.isExistingFlag = false;
     }
 
     public String getStreet() {
@@ -59,6 +62,14 @@ public class Address extends DBitem {
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    public boolean isExistingFlag() {
+        return isExistingFlag;
+    }
+
+    public void setExistingFlag(boolean existingFlag) {
+        isExistingFlag = existingFlag;
     }
 
     public String toString () {

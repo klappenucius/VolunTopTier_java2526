@@ -53,6 +53,17 @@ public class AddressService {
         }
     }
 
+    public Address isExisting (Address incomingAddress, String changedBy) {
+
+        validate(incomingAddress);
+
+        Address resultAddress = addressCrud.isExisting(incomingAddress);
+        if(!(resultAddress.isExistingFlag())) {
+            resultAddress = createAddress(resultAddress, changedBy);
+        }
+        return resultAddress;
+    }
+
     public Address createAddress(Address address, String changedBy) {
         validate(address);
 
@@ -65,59 +76,54 @@ public class AddressService {
         return created;
     }
 
-    public User fetchUser(int id) {
-        User user = (User) userCrud.getById(id);
-        if (user == null) {
-            throw new NoSuchElementException("No user found with id: " + id);
+    public Address fetchAddress(int id) {
+        Address address = (Address) addressCrud.getById(id);
+        if (address == null) {
+            throw new NoSuchElementException("No address found with id: " + id);
         }
-        return user;
+        return address;
     }
 
-    public User updateUser(User incomingUser, String changedBy) {
-        validate(incomingUser);
+    public Address updateAddress(Address incomingAddress, String changedBy) {
+        validate(incomingAddress);
 
-        User existingUser = fetchUser(incomingUser.getId());
+        Address existingAddress = fetchAddress(incomingAddress.getId());
 
         // compare each value between the existingProject and the incomingProject - if there is a change >
         // save it as 1 change in a list of changes
 
         List<Change> changes = new ArrayList<>();;
 
-        if(!existingUser.getFirstName().equals(incomingUser.getFirstName())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "first name", existingUser.getFirstName(), incomingUser.getFirstName(), changedBy));
+        if(!(existingAddress.getStreet().equals(incomingAddress.getStreet()))) {
+            changes.add(new Change(ENTITY_TYPE, incomingAddress.getId(), "UPDATE", "street", existingAddress.getStreet(), incomingAddress.getStreet(), changedBy));
         }
-        // calling a separate AddressService for the address
-        if(!existingUser.getLastName().equals(incomingUser.getLastName())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "last name", existingUser.getFirstName(), incomingUser.getLastName(), changedBy));
+        if(!(existingAddress.getHouseNumber().equals(incomingAddress.getHouseNumber()))) {
+            changes.add(new Change(ENTITY_TYPE, incomingAddress.getId(), "UPDATE", "house number", existingAddress.getHouseNumber(), incomingAddress.getHouseNumber(), changedBy));
         }
-        if(!existingUser.getUsername().equals(incomingUser.getUsername())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "username", existingUser.getUsername(), incomingUser.getUsername(), changedBy));
+        if(!(existingAddress.getPostalCode().equals(incomingAddress.getPostalCode()))) {
+            changes.add(new Change(ENTITY_TYPE, incomingAddress.getId(), "UPDATE", "postal code", existingAddress.getPostalCode(), incomingAddress.getPostalCode(), changedBy));
         }
-        if(!existingUser.getOib().equals(incomingUser.getUsername())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "oib", existingUser.getOib(), incomingUser.getOib(), changedBy));
+        if(!(existingAddress.getCity().equals(incomingAddress.getCity()))) {
+            changes.add(new Change(ENTITY_TYPE, incomingAddress.getId(), "UPDATE", "city", existingAddress.getCity(), incomingAddress.getCity(), changedBy));
         }
-        if(!existingUser.getDateOfBirth().equals(incomingUser.getDateOfBirth())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "date of birth", existingUser.getDateOfBirth().toString(), incomingUser.getDateOfBirth().toString(), changedBy));
+        if(!(existingAddress.getStreet().equals(incomingAddress.getCountry()))) {
+            changes.add(new Change(ENTITY_TYPE, incomingAddress.getId(), "UPDATE", "country", existingAddress.getCountry(), incomingAddress.getCountry(), changedBy));
         }
-        if(!(existingUser.getRole().name().equals(incomingUser.getRole().name()))) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "role", existingUser.getRole().name(), incomingUser.getRole().name(), changedBy));
-        }
-        if(!(existingUser.getTotalHoursWorked() == incomingUser.getTotalHoursWorked())) {
-            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "total hours worked", String.valueOf(existingUser.getTotalHoursWorked()), String.valueOf(incomingUser.getTotalHoursWorked()), changedBy));
-        }
-        userCrud.update(incomingUser);
+
+        addressCrud.update(incomingAddress);
 
         for (Change change : changes) {
             logTheChange(change);
         }
 
-        return incomingUser;
+        return incomingAddress;
+
     }
 
-    public boolean deleteUser(int id, String changedBy) {
-        User existing = fetchUser(id);
+    public boolean deleteAddress(int id, String changedBy) {
+        Address existing = fetchAddress(id);
 
-        boolean deleted = userCrud.delete(id);
+        boolean deleted = addressCrud.delete(id);
 
         if (deleted) {
             logTheChange(new Change(

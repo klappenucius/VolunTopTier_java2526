@@ -22,7 +22,7 @@ public class AddressService {
         this.changeLogService = changeLogService;
     }
 
-    private void validate(Address address) {
+    public void validate(Address address) {
         if (address == null) {
             throw new IllegalArgumentException("Address cannot be null");
         }

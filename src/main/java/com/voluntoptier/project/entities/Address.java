@@ -1,5 +1,7 @@
 package com.voluntoptier.project.entities;
 
+import java.util.Objects;
+
 public class Address extends DBitem {
 
     protected String street;
@@ -79,6 +81,22 @@ public class Address extends DBitem {
                 ", " + city +
                 ", " + country;
         return output;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof Address other)) return false;
+        return Objects.equals(getStreet(), other.getStreet())
+                && Objects.equals(getHouseNumber(), other.getHouseNumber())
+                && Objects.equals(getPostalCode(), other.getPostalCode())
+                && Objects.equals(getCity(), other.getCity())
+                && Objects.equals(getCountry(), other.getCountry());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getStreet(), getHouseNumber(), getPostalCode(), getCity(), getCountry());
     }
 
     public void print() {

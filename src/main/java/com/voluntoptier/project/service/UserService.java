@@ -1,8 +1,8 @@
 package com.voluntoptier.project.service;
 
+import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.Change;
 import com.voluntoptier.project.entities.User;
-import com.voluntoptier.project.repository.AddressCrud;
 import com.voluntoptier.project.repository.UserCrud;
 
 import java.util.ArrayList;
@@ -14,10 +14,12 @@ public class UserService {
 
     private final UserCrud userCrud;
     private final ChangeLogService changeLogService;
+    private final AddressService addressService;
 
-    public UserService(UserCrud userCrud, ChangeLogService changeLogService) {
+    public UserService(UserCrud userCrud, ChangeLogService changeLogService, AddressService addressService) {
         this.userCrud = userCrud;
         this.changeLogService = changeLogService;
+        this.addressService = addressService;
     }
 
     private void validate(User user) {
@@ -39,10 +41,13 @@ public class UserService {
         if (user.getDateOfBirth() == null) {
             throw new IllegalArgumentException("Date of birth is required");
         }
-        // pending AddressService
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required");
+        if(user.getAddress() == null) {
+            throw new IllegalArgumentException("Address is required");
         }
+        //addressService.validate(user.getAddress());
+        //if (user.getEmail() == null || user.getEmail().isBlank()) {
+            //throw new IllegalArgumentException("Email is required");
+        //}
         if (user.getTotalHoursWorked().pendingApproval() < 0 || user.getTotalHoursWorked().approvedHours() < 0) {
             throw new IllegalArgumentException("Booked hours cannot be negative");
         }
@@ -60,6 +65,9 @@ public class UserService {
 
     public User createUser(User user, String changedBy) {
         validate(user);
+
+        Address resolvedAddress = addressService.isExisting(user.getAddress(), changedBy);
+        user.setAddress(resolvedAddress);
 
         User created = (User) userCrud.add(user);
 
@@ -87,12 +95,11 @@ public class UserService {
         // save it as 1 change in a list of changes
 
         List<Change> changes = new ArrayList<>();
-        AddressService addressService = new AddressService (new AddressCrud()) ;
 
         if(!existingUser.getFirstName().equals(incomingUser.getFirstName())) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "first name", existingUser.getFirstName(), incomingUser.getFirstName(), changedBy));
         }
-        if(!existingUser.getAddress().equals(incomingUser.getAddress())) {addressService.isExisting()}
+        //
         if(!existingUser.getLastName().equals(incomingUser.getLastName())) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "last name", existingUser.getFirstName(), incomingUser.getLastName(), changedBy));
         }
@@ -105,6 +112,17 @@ public class UserService {
         if(!existingUser.getDateOfBirth().equals(incomingUser.getDateOfBirth())) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "date of birth", existingUser.getDateOfBirth().toString(), incomingUser.getDateOfBirth().toString(), changedBy));
         }
+
+        Address existingAddress = existingUser.getAddress();
+        Address incomingAddress = incomingUser.getAddress();
+        if(existingAddress == null || !existingAddress.equals(incomingAddress)) {
+            Address newAddress = addressService.isExisting(incomingAddress, changedBy);
+            incomingUser.setAddress(newAddress);
+            changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "address",
+                    existingAddress == null ? null : existingAddress.toString(),
+                    newAddress.toString(), changedBy));
+        }
+
         if(!(existingUser.getRole().name().equals(incomingUser.getRole().name()))) {
             changes.add(new Change(ENTITY_TYPE, incomingUser.getId(), "UPDATE", "role", existingUser.getRole().name(), incomingUser.getRole().name(), changedBy));
         }

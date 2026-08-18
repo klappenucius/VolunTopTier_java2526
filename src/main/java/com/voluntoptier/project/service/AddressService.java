@@ -23,23 +23,23 @@ public class AddressService {
     }
 
     public void validate(Address address) {
-        if (address == null) {
-            throw new IllegalArgumentException("Address cannot be null");
-        }
-        if (address.getStreet() == null || address.getStreet().isBlank()) {
-            throw new IllegalArgumentException("Street is required");
-        }
-        if (address.getHouseNumber() == null || address.getHouseNumber().isBlank()) {
-            throw new IllegalArgumentException("House number is required");
-        }
-        if (address.getPostalCode() == null || address.getPostalCode().isBlank()) {
-            throw new IllegalArgumentException("Postal code is required");
-        }
-        if (address.getCity() == null || address.getCity().isBlank()) {
-            throw new IllegalArgumentException("City is required");
-        }
-        if (address.getCountry() == null || address.getCountry().isBlank()) {
-            throw new IllegalArgumentException("Country is required");
+        if (!(address == null)) {
+
+            if (address.getStreet() == null || address.getStreet().isBlank()) {
+                throw new IllegalArgumentException("Street is required");
+            }
+            if (address.getHouseNumber() == null || address.getHouseNumber().isBlank()) {
+                throw new IllegalArgumentException("House number is required");
+            }
+            if (address.getPostalCode() == null || address.getPostalCode().isBlank()) {
+                throw new IllegalArgumentException("Postal code is required");
+            }
+            if (address.getCity() == null || address.getCity().isBlank()) {
+                throw new IllegalArgumentException("City is required");
+            }
+            if (address.getCountry() == null || address.getCountry().isBlank()) {
+                throw new IllegalArgumentException("Country is required");
+            }
         }
     }
 

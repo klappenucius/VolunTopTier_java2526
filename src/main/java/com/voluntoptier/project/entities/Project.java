@@ -66,7 +66,7 @@ public class Project extends DBitem {
         private final LocalDate endDate;
         private final int volunteersNeeded;
 
-        private Address address;
+        private Address address = null;
         private Integer hoursWorked = 0;
 
         public ProjectBuilder(int id, String name, Integer totalHours, LocalDate startDate, LocalDate endDate, int volunteersNeeded) {

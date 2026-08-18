@@ -1,5 +1,6 @@
 package com.voluntoptier.project.service;
 
+import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.Change;
 import com.voluntoptier.project.entities.Project;
 import com.voluntoptier.project.repository.ProjectCrud;
@@ -14,10 +15,12 @@ public class ProjectService {
 
     private final ProjectCrud projectCrud;
     private final ChangeLogService changeLogService;
+    private final AddressService addressService;
 
-    public ProjectService(ProjectCrud projectCrud, ChangeLogService changeLogService) {
+    public ProjectService(ProjectCrud projectCrud, ChangeLogService changeLogService, AddressService addressService) {
         this.projectCrud = projectCrud;
         this.changeLogService = changeLogService;
+        this.addressService = addressService;
     }
 
     private void validate(Project project) {
@@ -60,6 +63,9 @@ public class ProjectService {
     public Project createProject(Project project, String changedBy) {
         validate(project);
 
+        Address resolvedAddress = addressService.isExisting(project.getAddress(), changedBy);
+        project.setAddress(resolvedAddress);
+
         Project created = (Project) projectCrud.add(project);
 
         logTheChange(new Change(
@@ -90,7 +96,17 @@ public class ProjectService {
         if(!existingProject.getName().equals(incomingProject.getName())) {
             changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "name", existingProject.getName(), incomingProject.getName(), changedBy));
         }
-        // calling a separate AddressService for the address
+
+        Address existingAddress = existingProject.getAddress();
+        Address incomingAddress = incomingProject.getAddress();
+        if(existingAddress == null || !existingAddress.equals(incomingAddress)) {
+            Address newAddress = addressService.isExisting(incomingAddress, changedBy);
+            incomingProject.setAddress(newAddress);
+            changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "address",
+                    existingAddress == null ? null : existingAddress.toString(),
+                    newAddress.toString(), changedBy));
+        }
+
         if(!existingProject.getTotalHours().equals(incomingProject.getTotalHours())) {
             changes.add(new Change(ENTITY_TYPE, incomingProject.getId(), "UPDATE", "total hours", existingProject.getTotalHours().toString(), incomingProject.getTotalHours().toString(), changedBy));
         }

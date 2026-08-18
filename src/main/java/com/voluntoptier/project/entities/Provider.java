@@ -6,11 +6,11 @@ public class Provider extends DBitem{
     protected String contact;
     protected String oib;
 
-    public Provider(int id, String name, String contact, String oib) {
-        super(id);
-        this.name = name;
-        this.contact = contact;
-        this.oib = oib;
+    private Provider(ProviderBuilder builder) {
+        super(builder.id);
+        this.name = builder.name;
+        this.contact = builder.contact;
+        this.oib = builder.oib;
     }
 
     public String getName() {
@@ -55,4 +55,33 @@ public class Provider extends DBitem{
     public void print(){
         System.out.println(this.toString());
     }
+
+    public static class ProviderBuilder {
+        private final int id;
+        private final String name;
+        private final String contact;
+        private final String oib;
+
+        private Address address;
+
+        public ProviderBuilder(int id, String name, String contact, String oib) {
+            this.id = id;
+            this.name = name;
+            this.contact = contact;
+            this.oib = oib;
+
+            this.address = null;
+        }
+
+        public ProviderBuilder address(Address address) {
+            this.address = address;
+            return this;
+        }
+
+        public Provider build()  {
+            return new Provider(this);
+        }
+    }
+
+
 }

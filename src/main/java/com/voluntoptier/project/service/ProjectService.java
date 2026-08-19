@@ -23,7 +23,7 @@ public class ProjectService {
         this.addressService = addressService;
     }
 
-    private void validate(Project project) {
+    public void validate(Project project) {
         if (project == null) {
             throw new IllegalArgumentException("Project cannot be null");
         }

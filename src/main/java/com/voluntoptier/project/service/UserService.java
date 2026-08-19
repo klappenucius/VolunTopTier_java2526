@@ -22,7 +22,7 @@ public class UserService {
         this.addressService = addressService;
     }
 
-    private void validate(User user) {
+    public void validate(User user) {
         if (user == null) {
             throw new IllegalArgumentException("User cannot be null");
         }

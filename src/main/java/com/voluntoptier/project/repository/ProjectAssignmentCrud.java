@@ -149,4 +149,25 @@ public final class ProjectAssignmentCrud implements Crud{
             throw new RuntimeException("Error deleting project assignment: " + e.getMessage(), e);
         }
     }
+
+    public ProjectAssignment fetchByUserAndProject(User user, Project project) {
+
+        String selectSql = "SELECT * FROM projectAssignments WHERE user_id=? AND project_id=?";
+        ProjectAssignment fetchedProjectAssignment = null;
+
+        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
+            prepStmt.setInt(1, user.getId());
+            prepStmt.setInt(2, project.getId());
+
+            try (ResultSet selectResults = prepStmt.executeQuery()) {
+                if (selectResults.next()) {
+                    fetchedProjectAssignment = new ProjectAssignment()
+                }
+            }
+
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
+        }
+    }
 }

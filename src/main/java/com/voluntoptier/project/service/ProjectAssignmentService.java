@@ -61,7 +61,7 @@ public class ProjectAssignmentService {
     }
 
     public ProjectAssignment fetchProjectAssignment (User user, Project project) {
-
+        return projectAssignmentCrud.fetchByUserAndProject(user, project);
     }
 
     public ProjectAssignment assignUser(ProjectAssignment projectAssignment, String changedBy) {

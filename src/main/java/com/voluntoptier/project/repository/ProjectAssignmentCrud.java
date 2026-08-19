@@ -5,6 +5,8 @@ import com.voluntoptier.project.utils.DatabaseUtil;
 
 import java.io.IOException;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public final class ProjectAssignmentCrud implements Crud{
     private Connection connection;
@@ -68,10 +70,6 @@ public final class ProjectAssignmentCrud implements Crud{
             try (ResultSet selectResults = prepStmt.executeQuery()) {
                 if (selectResults.next()) {
 
-                    User assignedBy = (User) userCrud.getById(selectResults.getInt("assignedBy_id"));
-                    User user = (User) userCrud.getById(selectResults.getInt("user_id"));
-                    Project project = (Project) projectCrud.getById(selectResults.getInt("project_id"));
-
                     HoursWorked hoursWorked = new HoursWorked(
                             selectResults.getInt("approvedHours"),
                             selectResults.getInt("pendingApproval")
@@ -80,9 +78,9 @@ public final class ProjectAssignmentCrud implements Crud{
                     resultProjectAssignment = new ProjectAssignment(selectResults.getInt("id"),
                             selectResults.getDate("assignedDate").toLocalDate(),
                             selectResults.getTime("assignedTime").toLocalTime(),
-                            assignedBy,
-                            project,
-                            user,
+                            (User) userCrud.getById(selectResults.getInt("assigned_id")),
+                            (Project) projectCrud.getById(selectResults.getInt("project_id")),
+                            (User) userCrud.getById(selectResults.getInt("user_id")),
                             selectResults.getInt("hoursNeeded"),
                             hoursWorked
                     );
@@ -161,13 +159,25 @@ public final class ProjectAssignmentCrud implements Crud{
 
             try (ResultSet selectResults = prepStmt.executeQuery()) {
                 if (selectResults.next()) {
-                    fetchedProjectAssignment = new ProjectAssignment()
+                    HoursWorked hoursWorked = new HoursWorked(
+                            selectResults.getInt("approvedHours"),
+                            selectResults.getInt("pendingApproval")
+                    );
+
+                    fetchedProjectAssignment = new ProjectAssignment(selectResults.getInt("id"),
+                            selectResults.getObject("date", LocalDate.class),
+                            selectResults.getObject("time", LocalTime.class),
+                            (User) userCrud.getById(selectResults.getInt("id")),
+                            (Project) projectCrud.getById(selectResults.getInt("id")),
+                            (User) userCrud.getById(selectResults.getInt("id")),
+                            selectResults.getInt("expectedHours"),
+                            hoursWorked
+                            );
                 }
             }
-
-
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
         }
+        return fetchedProjectAssignment;
     }
 }

@@ -67,6 +67,11 @@ public class ProjectAssignmentService {
     public ProjectAssignment assignUser(ProjectAssignment projectAssignment, String changedBy) {
         validate(projectAssignment);
 
+        // tu bi trebalo razlikovati postoji li već ovakav objekt -
+        // je li taj user već bio assigned na taj projekt -
+        // promjena statusa u "active"
+        // IF NOT: kreiranje novog ProjectAssignmenta
+
         ProjectAssignment created = (ProjectAssignment) projectAssignmentCrud.add(projectAssignment);
 
         logTheChange(new Change(
@@ -74,6 +79,22 @@ public class ProjectAssignmentService {
                 null, null, created.toString(), changedBy));
 
         return created;
+    }
+
+    // refactorati tako da samo mijenja atribut u "inactive"
+    // dodati još jednu koja je hard delete - ta će uz pomoć crud-a brisati projectassingment u potpunosti
+    public boolean removeUser(int id, String changedBy) {
+        ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(id);
+
+        boolean deleted = projectAssignmentCrud.delete(id);
+
+        if (deleted) {
+            logTheChange(new Change(
+                    ENTITY_TYPE, id, "DELETE",
+                    null, existing.toString(), null, changedBy));
+        }
+
+        return deleted;
     }
 
 

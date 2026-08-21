@@ -83,7 +83,8 @@ public final class ProjectAssignmentCrud implements Crud{
                             (Project) projectCrud.getById(selectResults.getInt("project_id")),
                             (User) userCrud.getById(selectResults.getInt("user_id")),
                             selectResults.getInt("hoursNeeded"),
-                            hoursWorked
+                            hoursWorked,
+                            selectResults.getBoolean("isActive")
                     );
                 } else {
                     throw new RuntimeException("Creating project assignment failed, no ID obtained.");
@@ -173,7 +174,8 @@ public final class ProjectAssignmentCrud implements Crud{
                             (Project) projectCrud.getById(selectResults.getInt("id")),
                             (User) userCrud.getById(selectResults.getInt("id")),
                             selectResults.getInt("expectedHours"),
-                            hoursWorked
+                            hoursWorked,
+                            selectResults.getBoolean("isActive")
                             );
                 }
             }

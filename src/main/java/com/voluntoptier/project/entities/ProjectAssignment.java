@@ -20,7 +20,7 @@ public class ProjectAssignment extends DBitem{
 
     protected boolean isActive;
 
-    public ProjectAssignment(int id, LocalDate date, LocalTime time, User assignedby, Project project, User user, int expectedHours, HoursWorked hoursWorked) {
+    public ProjectAssignment(int id, LocalDate date, LocalTime time, User assignedby, Project project, User user, int expectedHours, HoursWorked hoursWorked, boolean isActive) {
         super(id);
         this.date = date;
         this.time = time;
@@ -29,7 +29,7 @@ public class ProjectAssignment extends DBitem{
         this.user = user;
         this.expectedHours = expectedHours;
         this.hoursWorked = hoursWorked;
-        this.isActive = true;
+        this.isActive = isActive;
     }
 
     public LocalDate getDate() {

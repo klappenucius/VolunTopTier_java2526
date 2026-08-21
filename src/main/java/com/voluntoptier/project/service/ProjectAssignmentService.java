@@ -67,23 +67,40 @@ public class ProjectAssignmentService {
     public ProjectAssignment assignUser(ProjectAssignment projectAssignment, String changedBy) {
         validate(projectAssignment);
 
-        // tu bi trebalo razlikovati postoji li već ovakav objekt -
-        // je li taj user već bio assigned na taj projekt -
-        // promjena statusa u "active"
-        // IF NOT: kreiranje novog ProjectAssignmenta
+        ProjectAssignment existing = projectAssignmentCrud.fetchByUserAndProject(projectAssignment.getUser(), projectAssignment.getProject());
+        if (!(existing == null)) {
+            existing.setActive(true);
 
-        ProjectAssignment created = (ProjectAssignment) projectAssignmentCrud.add(projectAssignment);
+            logTheChange(new Change(
+                    ENTITY_TYPE, existing.getId(), "ACTIVATE",
+                    null, null, existing.toString(), changedBy));
 
-        logTheChange(new Change(
-                ENTITY_TYPE, created.getId(), "CREATE",
-                null, null, created.toString(), changedBy));
+            return existing;
 
-        return created;
+        } else {
+            ProjectAssignment created = (ProjectAssignment) projectAssignmentCrud.add(projectAssignment);
+
+            logTheChange(new Change(
+                    ENTITY_TYPE, created.getId(), "CREATE",
+                    null, null, created.toString(), changedBy));
+
+            return created;
+        }
     }
 
-    // refactorati tako da samo mijenja atribut u "inactive"
-    // dodati još jednu koja je hard delete - ta će uz pomoć crud-a brisati projectassingment u potpunosti
-    public boolean removeUser(int id, String changedBy) {
+    public ProjectAssignment removeUser(int id, String changedBy) {
+        ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(id);
+
+        existing.setActive(false);
+
+            logTheChange(new Change(
+                    ENTITY_TYPE, id, "DEACTIVATE",
+                    null, existing.toString(), null, changedBy));
+
+        return existing;
+    }
+
+    public boolean hardDelete(int id, String changedBy) {
         ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(id);
 
         boolean deleted = projectAssignmentCrud.delete(id);
@@ -96,6 +113,4 @@ public class ProjectAssignmentService {
 
         return deleted;
     }
-
-
 }

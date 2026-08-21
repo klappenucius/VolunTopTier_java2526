@@ -24,7 +24,7 @@ public final class ProjectAssignmentCrud implements Crud{
             throw new IllegalArgumentException("Expected a ProjectAssignment, got: " + item.getClass());
         }
 
-        String insertSql = "INSERT INTO projectAssignments (assignedDate, assignedTime, assignedBy_id, project_id, user_id, hoursNeeded, approvedHours, pendingApproval) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String insertSql = "INSERT INTO projectAssignments (assignedDate, assignedTime, assignedBy_id, project_id, user_id, hoursNeeded, approvedHours, pendingApproval, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement prepStmt = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -36,6 +36,7 @@ public final class ProjectAssignmentCrud implements Crud{
             prepStmt.setInt(6, projectAssignment.getExpectedHours());
             prepStmt.setInt(7, projectAssignment.getHoursWorked().approvedHours());
             prepStmt.setInt(8, projectAssignment.getHoursWorked().pendingApproval());
+            prepStmt.setBoolean(9, projectAssignment.isActive());
 
             int affectedRows = prepStmt.executeUpdate();
 
@@ -105,7 +106,7 @@ public final class ProjectAssignmentCrud implements Crud{
             throw new IllegalArgumentException("Expected a ProjectAssignment, got: " + item.getClass());
         }
 
-        String updateSql = "UPDATE projectAssignments SET date = ?, time = ?, project_id = ?, user_id = ?, assignedBy_id = ?, hoursNeeded = ?, approvedHours = ?, pendingApproval = ? WHERE id = ?";
+        String updateSql = "UPDATE projectAssignments SET date = ? AND time = ? AND project_id = ? AND user_id = ? AND assignedBy_id = ? AND hoursNeeded = ? AND approvedHours = ? AND pendingApproval = ? AND isActive = ? WHERE id = ?";
 
         try (PreparedStatement prepStmt = connection.prepareStatement(updateSql)) {
             prepStmt.setDate(1, Date.valueOf(projectAssignment.getDate()));
@@ -114,6 +115,7 @@ public final class ProjectAssignmentCrud implements Crud{
             prepStmt.setInt(4, projectAssignment.getUser().getId());
             prepStmt.setInt(5, projectAssignment.getAssignedby().getId());
             prepStmt.setInt(6, projectAssignment.getExpectedHours());
+            prepStmt.setBoolean(7, projectAssignment.isActive());
 
             int affectedRows = prepStmt.executeUpdate();
 

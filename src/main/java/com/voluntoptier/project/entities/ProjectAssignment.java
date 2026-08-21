@@ -18,6 +18,8 @@ public class ProjectAssignment extends DBitem{
 
     protected HoursWorked hoursWorked;
 
+    protected boolean isActive;
+
     public ProjectAssignment(int id, LocalDate date, LocalTime time, User assignedby, Project project, User user, int expectedHours, HoursWorked hoursWorked) {
         super(id);
         this.date = date;
@@ -27,6 +29,7 @@ public class ProjectAssignment extends DBitem{
         this.user = user;
         this.expectedHours = expectedHours;
         this.hoursWorked = hoursWorked;
+        this.isActive = true;
     }
 
     public LocalDate getDate() {
@@ -85,13 +88,22 @@ public class ProjectAssignment extends DBitem{
         this.hoursWorked = hoursWorked;
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
     public String toString() {
         String output = "User " + user.toString() +
                 " has been assigned to " + project.toString() +
                 " on " + date.toString() +
                 " at " + time.toString() +
                 " by " + assignedby.toString() +
-                ", expected hours: " + expectedHours;
+                ", expected hours: " + expectedHours +
+                "the assignment is active: " + isActive;
         return output;
     }
 

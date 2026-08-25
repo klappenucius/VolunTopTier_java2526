@@ -3,6 +3,10 @@ package com.voluntoptier.project.service;
 import com.voluntoptier.project.entities.*;
 import com.voluntoptier.project.repository.ProjectAssignmentCrud;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+
 public class ProjectAssignmentService {
     private static final String ENTITY_TYPE = "ProjectAssignment";
 
@@ -64,12 +68,60 @@ public class ProjectAssignmentService {
         return projectAssignmentCrud.fetchByUserAndProject(user, project);
     }
 
+    public ProjectAssignment updateProjectAssignment(ProjectAssignment incomingProjectAssignment, String changedBy) {
+        validate(incomingProjectAssignment);
+
+        ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(incomingProjectAssignment.getId());
+        if (existing == null) {
+            throw new NoSuchElementException("No project assignment found with id: " + incomingProjectAssignment.getId());
+        }
+
+        List<Change> changes = new ArrayList<>();
+
+        if(!existing.getDate().equals(incomingProjectAssignment.getDate())){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "date", existing.getDate().toString(), incomingProjectAssignment.getDate().toString(), changedBy));
+        }
+        if(!existing.getTime().equals(incomingProjectAssignment.getTime())){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "time", existing.getTime().toString(), incomingProjectAssignment.getTime().toString(), changedBy));
+        }
+        if(!existing.getAssignedby().equals(incomingProjectAssignment.getAssignedby())){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "assignedBy", existing.getAssignedby().getUsername(),
+                    incomingProjectAssignment.getAssignedby().getUsername(), changedBy));
+        }
+        if(!existing.getUser().equals(incomingProjectAssignment.getUser())){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "user", existing.getUser().getUsername(),
+                    incomingProjectAssignment.getUser().getUsername(), changedBy));
+        }
+        if(existing.getExpectedHours() == incomingProjectAssignment.getExpectedHours()){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "expected hours", Integer.toString(existing.getExpectedHours()),
+                    Integer.toString(incomingProjectAssignment.getExpectedHours()), changedBy));
+        }
+        if(!existing.getHoursWorked().equals(incomingProjectAssignment.getHoursWorked())){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "hours worked", existing.getHoursWorked().toString(),
+                    incomingProjectAssignment.getHoursWorked().toString(), changedBy));
+        }
+        if(existing.isActive() == incomingProjectAssignment.isActive()){
+            changes.add(new Change(ENTITY_TYPE, incomingProjectAssignment.getId(), "UPDATE", "status", Boolean.toString(existing.isActive()),
+                    Boolean.toString(incomingProjectAssignment.isActive()), changedBy));
+        }
+
+        projectAssignmentCrud.update(incomingProjectAssignment);
+
+        for (Change change : changes) {
+            logTheChange(change);
+        }
+
+        return incomingProjectAssignment;
+
+    }
+
     public ProjectAssignment assignUser(ProjectAssignment projectAssignment, String changedBy) {
         validate(projectAssignment);
 
         ProjectAssignment existing = projectAssignmentCrud.fetchByUserAndProject(projectAssignment.getUser(), projectAssignment.getProject());
         if (!(existing == null)) {
             existing.setActive(true);
+            projectAssignmentCrud.update(existing);
 
             logTheChange(new Change(
                     ENTITY_TYPE, existing.getId(), "ACTIVATE",
@@ -90,8 +142,12 @@ public class ProjectAssignmentService {
 
     public ProjectAssignment removeUser(int id, String changedBy) {
         ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(id);
+        if (existing == null) {
+            throw new NoSuchElementException("No project assignment found with id: " + id);
+        }
 
         existing.setActive(false);
+        projectAssignmentCrud.update(existing);
 
             logTheChange(new Change(
                     ENTITY_TYPE, id, "DEACTIVATE",
@@ -102,6 +158,9 @@ public class ProjectAssignmentService {
 
     public boolean hardDelete(int id, String changedBy) {
         ProjectAssignment existing = (ProjectAssignment) projectAssignmentCrud.getById(id);
+        if (existing == null) {
+            throw new NoSuchElementException("No project assignment found with id: " + id);
+        }
 
         boolean deleted = projectAssignmentCrud.delete(id);
 

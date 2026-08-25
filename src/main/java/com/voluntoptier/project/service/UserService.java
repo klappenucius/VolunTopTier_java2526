@@ -86,6 +86,15 @@ public class UserService {
         return user;
     }
 
+    public User fetchByUsername(String username) {
+        User user = (User) userCrud.fetchByUsername(username);
+        if (user == null) {
+            throw new NoSuchElementException("No user found with username: " + username);
+        }
+
+        return user;
+    }
+
     public User updateUser(User incomingUser, String changedBy) {
         validate(incomingUser);
 

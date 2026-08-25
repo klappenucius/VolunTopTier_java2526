@@ -13,7 +13,7 @@ public class AuthService {
 
     private String credentialsFileName;
 
-    private final Map<String, String> usersCreds;
+    private static Map<String, String> usersCreds = new HashMap<>();
 
     public AuthService(String credentialsFileName) throws IOException {
         this.credentialsFileName = FilesUtil.getCredentialsFilePath();
@@ -47,7 +47,7 @@ public class AuthService {
         }
     }
 
-    public boolean validateCreds(String username, String password) {
+    public static boolean validateCreds(String username, String password) {
 
         String hashedPwd = HashUtil.hash(password);
             String storedPwdHash = usersCreds.get(username);

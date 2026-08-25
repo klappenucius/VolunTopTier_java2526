@@ -93,6 +93,44 @@ public final class UserCrud implements Crud{
         return resultUser;
     }
 
+    public User fetchByUsername(String username) {
+        String selectSql = "SELECT * FROM users WHERE username=?";
+        User resultUser = null;
+
+        try(PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
+            prepStmt.setString(1, username);
+
+            try(ResultSet selectResults = prepStmt.executeQuery()) {
+                if (selectResults.next()) {
+                    Address address = (Address) addressCrud.getById(selectResults.getInt("address_id"));
+                    HoursWorked hoursWokred = new HoursWorked(
+                            selectResults.getInt("approvedHours"),
+                            selectResults.getInt("pendingApproval")
+                    );
+                    Role role = Role.valueOf(selectResults.getString("role"));
+
+                    resultUser = new User(
+                            selectResults.getInt("id"),
+                            selectResults.getString("firstName"),
+                            selectResults.getString("lastName"),
+                            selectResults.getString("username"),
+                            selectResults.getString("oib"),
+                            selectResults.getDate("dateOfBirth").toLocalDate(),
+                            address,
+                            selectResults.getString("email"),
+                            role
+                    );
+
+                    resultUser.setTotalHoursWorked(hoursWorked);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error adding user: " + e.getMessage(), e);
+        }
+
+        return resultUser;
+    }
+
     public boolean update (DBitem item) {
 
         if(!(item instanceof User user)) {

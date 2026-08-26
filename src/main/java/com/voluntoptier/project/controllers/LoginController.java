@@ -6,9 +6,15 @@ import com.voluntoptier.project.service.AuthService;
 import com.voluntoptier.project.service.UserService;
 import com.voluntoptier.project.utils.SessionUtil;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class LoginController {
 
@@ -24,8 +30,23 @@ public class LoginController {
 
         if(AuthService.validateCreds(username, password)) {
             SessionUtil.setCurrentUser(userService.fetchByUsername(username));
-            // add paths to different options/screens, depending on role
-        };
+            loadMainScreen();
+        } else {
+            errorLabel.setText("Invalid username or password.");
+        }
+    }
+
+    private void loadMainScreen() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/voluntoptier/project/view/mainScreen.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) usernameField.getScene().getWindow();
+            stage.setScene(new Scene(root));
+        } catch (IOException e) {
+            errorLabel.setText("Failed to load main screen.");
+        }
     }
 }
 

@@ -3,7 +3,7 @@ package com.voluntoptier.project.repository;
 import com.voluntoptier.project.entities.DBitem;
 
 
-public sealed interface Crud permits UserCrud, ProjectCrud, AddressCrud, ProjectAssignmentCrud {
+public sealed interface Crud permits UserCrud, ProjectCrud, AddressCrud, ProjectAssignmentCrud, WorklogCrud {
 
     DBitem add(DBitem item);
     DBitem getById(int id);

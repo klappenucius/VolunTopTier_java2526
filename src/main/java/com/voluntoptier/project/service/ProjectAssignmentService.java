@@ -68,6 +68,10 @@ public class ProjectAssignmentService {
         return projectAssignmentCrud.fetchByUserAndProject(user, project);
     }
 
+    public List<ProjectAssignment> fetchProjectsAssignedToUser(int userId) {
+        return projectAssignmentCrud.getByUserId(userId);
+    }
+
     public ProjectAssignment updateProjectAssignment(ProjectAssignment incomingProjectAssignment, String changedBy) {
         validate(incomingProjectAssignment);
 

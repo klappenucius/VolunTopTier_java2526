@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class ProjectAssignmentCrud implements Crud{
     private Connection connection;
@@ -94,9 +96,45 @@ public final class ProjectAssignmentCrud implements Crud{
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
         }
-
         return resultProjectAssignment;
+    };
 
+    public List<ProjectAssignment> getByUserId(int UserId) {
+
+        String selectSql = "SELECT * FROM  projectAssignments WHERE user_id = ?";
+        List<ProjectAssignment> results = new ArrayList<>();
+
+        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
+            prepStmt.setInt(1, UserId);
+
+            try (ResultSet selectResults = prepStmt.executeQuery()) {
+                while (selectResults.next()) {
+
+                    HoursWorked hoursWorked = new HoursWorked(
+                            selectResults.getInt("approvedHours"),
+                            selectResults.getInt("pendingApproval")
+                    );
+
+                    ProjectAssignment pa = new ProjectAssignment(
+                            selectResults.getInt("id"),
+                            selectResults.getDate("assignedDate").toLocalDate(),
+                            selectResults.getTime("assignedTime").toLocalTime(),
+                            (User) userCrud.getById(selectResults.getInt("assigned_id")),
+                            (Project) projectCrud.getById(selectResults.getInt("project_id")),
+                            (User) userCrud.getById(selectResults.getInt("user_id")),
+                            selectResults.getInt("hoursNeeded"),
+                            hoursWorked,
+                            selectResults.getBoolean("isActive")
+                    );
+
+                    results.add(pa);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
+        }
+        return results;
     };
 
     public boolean update(DBitem item){

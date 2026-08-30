@@ -9,17 +9,15 @@ public class Worklog extends DBitem {
     private int hours;
     private String description;
     private WorklogStatus status;
-    private LocalDateTime submittedAt;
 
     public Worklog(int id, ProjectAssignment projectAssignment, LocalDate date, int hours, String description,
-                   WorklogStatus status, LocalDateTime submittedAt) {
+                   WorklogStatus status) {
         super(id);
         this.projectAssignment = projectAssignment;
         this.date = date;
         this.hours = hours;
         this.description = description;
         this.status = status;
-        this.submittedAt = submittedAt;
     }
 
     public ProjectAssignment getProjectAssignment() {
@@ -60,14 +58,6 @@ public class Worklog extends DBitem {
 
     public void setStatus(WorklogStatus status) {
         this.status = status;
-    }
-
-    public LocalDateTime getSubmittedAt() {
-        return submittedAt;
-    }
-
-    public void setSubmittedAt(LocalDateTime submittedAt) {
-        this.submittedAt = submittedAt;
     }
 
     @Override

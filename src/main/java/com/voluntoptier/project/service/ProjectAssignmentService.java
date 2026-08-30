@@ -72,6 +72,28 @@ public class ProjectAssignmentService {
         return projectAssignmentCrud.getByUserId(userId);
     }
 
+    public ProjectAssignment fetchProjectAssignmentById(int id) {
+        return (ProjectAssignment) projectAssignmentCrud.getById(id);
+    }
+
+    public void adjustHours(ProjectAssignment projectAssignment, int pendingDelta, int approvedDelta) {
+        HoursWorked current =projectAssignment.getHoursWorked();
+        int newPending = current.pendingApproval() + pendingDelta;
+        int newApproved = current.approvedHours() + approvedDelta;
+
+        if (newPending < 0 || newApproved < 0) {
+            throw new IllegalArgumentException(
+                    "Hours cannot go negative for assignment id " + projectAssignment.getId());
+        }
+        if (newApproved > projectAssignment.getExpectedHours()) {
+            throw new IllegalArgumentException(
+                    "Approved hours would exceed expected hours for assignment id " + projectAssignment.getId());
+        }
+
+        projectAssignment.setHoursWorked(new HoursWorked(newPending, newApproved));
+        projectAssignmentCrud.update(projectAssignment);
+    }
+
     public ProjectAssignment updateProjectAssignment(ProjectAssignment incomingProjectAssignment, String changedBy) {
         validate(incomingProjectAssignment);
 

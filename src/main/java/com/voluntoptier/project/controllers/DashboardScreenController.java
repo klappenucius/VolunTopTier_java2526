@@ -6,8 +6,14 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 import javafx.util.Callback;
+
+import java.io.IOException;
 
 public class DashboardScreenController {
     @FXML
@@ -16,6 +22,7 @@ public class DashboardScreenController {
     @FXML private TableColumn<ProjectAssignment, String> approvedVsTotalHoursColumn;
     @FXML private TableColumn<ProjectAssignment, Integer> pendingApprovalColumn;
     @FXML private TableColumn<ProjectAssignment, Void> logWorkColumn;
+    @FXML private Label errorLabel;
 
     public ProjectAssignmentService projectAssignmentService;
 
@@ -59,10 +66,27 @@ public class DashboardScreenController {
                             onLogWorkClicked(projectAssignment);
                         });
                 }
-            }
+            };
         }
     });
+    }
 
+    private void onLogWorkClicked(ProjectAssignment projectAssignment) {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/voluntoptier/project/view/logWork.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) projectAssignmentsTable.getScene().getWindow();
+            stage.setScene(new Scene(root));
+        } catch (IOException e) {
+            errorLabel.setText("Failed to load main screen.");
+        }
+    }
 
 
 }
+
+
+
+

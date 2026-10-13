@@ -1,7 +1,5 @@
 package com.voluntoptier.project.controllers;
 
-import com.voluntoptier.project.app.AppContext;
-import com.voluntoptier.project.entities.User;
 import com.voluntoptier.project.service.AuthService;
 import com.voluntoptier.project.service.UserService;
 import com.voluntoptier.project.utils.SessionUtil;

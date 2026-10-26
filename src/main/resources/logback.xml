@@ -14,7 +14,11 @@
         </encoder>
     </appender>
 
-    <root level="TRACE">
+    <!-- Our own code: detailed logs -->
+    <logger name="com.voluntoptier" level="DEBUG"/>
+
+    <!-- Everything else (Spring, H2, Tomcat): only INFO and above, otherwise TRACE floods the log -->
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>

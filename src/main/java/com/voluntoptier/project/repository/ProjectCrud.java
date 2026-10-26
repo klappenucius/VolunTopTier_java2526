@@ -3,132 +3,114 @@ package com.voluntoptier.project.repository;
 import com.voluntoptier.project.entities.Address;
 import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Project;
-import com.voluntoptier.project.utils.DatabaseUtil;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
-public final class ProjectCrud implements Crud{
+/**
+ * Data access for the {@code projects} table.
+ */
+@Repository
+public non-sealed class ProjectCrud implements Crud {
 
-    private Connection connection;
-    private AddressCrud addressCrud;
+    private static final String INSERT_SQL =
+            "INSERT INTO projects (name, totalHours, startDate, endDate, volunteersNeeded, address_id) "
+                    + "VALUES (?, ?, ?, ?, ?, ?)";
+    private static final String SELECT_BY_ID_SQL = "SELECT * FROM projects WHERE id = ?";
+    private static final String UPDATE_SQL =
+            "UPDATE projects SET name = ?, totalHours = ?, startDate = ?, endDate = ?, volunteersNeeded = ?, "
+                    + "address_id = ? WHERE id = ?";
+    private static final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
 
-    public ProjectCrud(Connection connection, AddressCrud addressCrud) {
-        this.connection = connection;
+    private final JdbcTemplate jdbcTemplate;
+    private final AddressCrud addressCrud;
+
+    /**
+     * @param jdbcTemplate Spring's JDBC helper, injected automatically
+     * @param addressCrud  used to load each project's address
+     */
+    public ProjectCrud(JdbcTemplate jdbcTemplate, AddressCrud addressCrud) {
+        this.jdbcTemplate = jdbcTemplate;
         this.addressCrud = addressCrud;
     }
 
-    public DBitem add (DBitem item) {
+    @Override
+    public DBitem add(DBitem item) {
         if (!(item instanceof Project project)) {
             throw new IllegalArgumentException("Expected a Project, got: " + item.getClass());
         }
 
-        String insertSql = "INSERT INTO projects (name, totalHours, startDate, endDate, volunteersNeeded, address_id) VALUES (?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement prepStmt = connection.prepareStatement(insertSql)) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement prepStmt = connection.prepareStatement(INSERT_SQL, new String[]{"ID"});
             prepStmt.setString(1, project.getName());
             prepStmt.setInt(2, project.getTotalHours());
-            prepStmt.setDate(3, Date.valueOf(project.getStartDate()));
-            prepStmt.setDate(4, Date.valueOf(project.getEndDate()));
+            prepStmt.setObject(3, project.getStartDate());
+            prepStmt.setObject(4, project.getEndDate());
             prepStmt.setInt(5, project.getVolunteersNeeded());
-            prepStmt.setInt(6, project.getAddress().getId());
+            prepStmt.setObject(6, addressIdOf(project));
+            return prepStmt;
+        }, keyHolder);
 
-            int affectedRows = prepStmt.executeUpdate();
-
-            try (ResultSet generatedKeys = prepStmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    project.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new RuntimeException("Creating project failed, no ID obtained.");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error adding project: " + e.getMessage(), e);
-        }
-
+        project.setId(Objects.requireNonNull(keyHolder.getKey(), "No id returned for new project").intValue());
         return project;
     }
 
+    /**
+     * @return the project, or {@code null} if there is none with this id
+     */
+    @Override
     public DBitem getById(int id) {
-
-        String selectSql = "SELECT * FROM projects WHERE id = ?";
-        Project resultProject = null;
-
-        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-            prepStmt.setInt(1, id);
-
-            try(ResultSet selectResults = prepStmt.executeQuery()) {
-                if (selectResults.next()) {
-                    Address address = (Address) addressCrud.getById(selectResults.getInt("address_id"));
-
-                    resultProject = new Project.ProjectBuilder(
-                           selectResults.getInt("id"),
-                            selectResults.getString("name"),
-                            selectResults.getInt("totalHours"),
-                            selectResults.getDate("startDate").toLocalDate(),
-                            selectResults.getDate("endDate").toLocalDate(),
-                            selectResults.getInt("volunteersNeeded"))
-                            .address(address)
-                            .hoursWorked(selectResults.getInt("hoursWorked"))
-                            .build();
-                } else {
-                    throw new RuntimeException("Creating incentive failed, no ID obtained.");
-                    }
-                }
-            }  catch (SQLException e) {
-            throw new RuntimeException("Error adding project: " + e.getMessage(), e);
-        }
-        return resultProject;
+        List<Project> results = jdbcTemplate.query(SELECT_BY_ID_SQL, this::mapRow, id);
+        return results.isEmpty() ? null : results.get(0);
     }
 
-    public boolean update (DBitem item) {
-
-        if(!(item instanceof Project project)) {
+    @Override
+    public boolean update(DBitem item) {
+        if (!(item instanceof Project project)) {
             throw new IllegalArgumentException("Expected a Project, got: " + item.getClass());
         }
 
-        String updateSql = "UPDATE projects SET name = ?, totalHours = ?, hoursWorked = ?, startDate = ?, endDate = ?, volunteersNeeded = ?, address_id = ? WHERE id = ?";
+        int affectedRows = jdbcTemplate.update(UPDATE_SQL,
+                project.getName(), project.getTotalHours(), project.getStartDate(), project.getEndDate(),
+                project.getVolunteersNeeded(), addressIdOf(project), project.getId());
 
-        try (PreparedStatement prepStmt = connection.prepareStatement(updateSql)) {
-
-            prepStmt.setString(1, project.getName());
-            prepStmt.setInt(2, project.getTotalHours());
-            prepStmt.setInt(3, project.getHoursWorked());
-            prepStmt.setDate(4, Date.valueOf(project.getStartDate()));
-            prepStmt.setDate(5, Date.valueOf(project.getEndDate()));
-            prepStmt.setInt(6, project.getVolunteersNeeded());
-            prepStmt.setInt(7, project.getAddress().getId());
-            prepStmt.setInt(8, project.getId());
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            if (affectedRows == 0) {
-                throw new RuntimeException("Update failed, no project found with id: " + project.getId());
-            }
-
-            return true;
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error updating project: " + e.getMessage(), e);
+        if (affectedRows == 0) {
+            throw new NoSuchElementException("Update failed, no project found with id: " + project.getId());
         }
+        return true;
     }
 
-    public boolean delete (int id) {
+    @Override
+    public boolean delete(int id) {
+        return jdbcTemplate.update(DELETE_SQL, id) > 0;
+    }
 
-        String deleteSql = "DELETE FROM projects WHERE id = ?";
+    private static Integer addressIdOf(Project project) {
+        return project.getAddress() == null ? null : project.getAddress().getId();
+    }
 
-        try(PreparedStatement prepStmt = connection.prepareStatement(deleteSql)) {
-            prepStmt.setInt(1, id);
+    private Project mapRow(ResultSet rs, int rowNum) throws SQLException {
+        Integer addressId = rs.getObject("address_id", Integer.class);
+        Address address = addressId == null ? null : (Address) addressCrud.getById(addressId);
 
-            int affectedRows = prepStmt.executeUpdate();
-
-            if(affectedRows == 0) {
-                throw new RuntimeException("Deletion failed, no address found with id: " + id);
-            } else {
-                return true;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error deleting address: " + e.getMessage(), e);
-        }
+        return new Project.ProjectBuilder(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getInt("totalHours"),
+                rs.getObject("startDate", LocalDate.class),
+                rs.getObject("endDate", LocalDate.class),
+                rs.getInt("volunteersNeeded"))
+                .address(address)
+                .build();
     }
 }

@@ -1,148 +1,120 @@
 package com.voluntoptier.project.repository;
 
-import com.voluntoptier.project.entities.DBitem;
 import com.voluntoptier.project.entities.Address;
-import com.voluntoptier.project.utils.DatabaseUtil;
+import com.voluntoptier.project.entities.DBitem;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
-public final class AddressCrud implements Crud{
+/**
+ * Data access for the {@code addresses} table.
+ */
+@Repository
+public non-sealed class AddressCrud implements Crud {
 
-    private Connection connection;
+    private static final String INSERT_SQL =
+            "INSERT INTO addresses (street, houseNumber, postalCode, city, country) VALUES (?, ?, ?, ?, ?)";
+    private static final String SELECT_BY_ID_SQL = "SELECT * FROM addresses WHERE id = ?";
+    private static final String SELECT_SAME_SQL =
+            "SELECT * FROM addresses WHERE street = ? AND houseNumber = ? AND postalCode = ? AND city = ? AND country = ?";
+    private static final String UPDATE_SQL =
+            "UPDATE addresses SET street = ?, houseNumber = ?, postalCode = ?, city = ?, country = ? WHERE id = ?";
+    private static final String DELETE_SQL = "DELETE FROM addresses WHERE id = ?";
 
-    public AddressCrud(Connection connection){
-        this.connection = connection;
+    private final JdbcTemplate jdbcTemplate;
+
+    /**
+     * @param jdbcTemplate Spring's JDBC helper, injected automatically
+     */
+    public AddressCrud(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    public DBitem add (DBitem item) {
-
-        if(!(item instanceof Address address)) {
+    @Override
+    public DBitem add(DBitem item) {
+        if (!(item instanceof Address address)) {
             throw new IllegalArgumentException("Expected an Address, got: " + item.getClass());
         }
 
-        String insertSql = "INSERT INTO addresses (STREET, HOUSENUMBER, POSTALCODE, CITY, COUNTRY) VALUES (?, ?, ?, ?, ?)";
-
-        try(PreparedStatement prepStmt = connection.prepareStatement(insertSql)) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement prepStmt = connection.prepareStatement(INSERT_SQL, new String[]{"ID"});
             prepStmt.setString(1, address.getStreet());
             prepStmt.setString(2, address.getHouseNumber());
             prepStmt.setString(3, address.getPostalCode());
             prepStmt.setString(4, address.getCity());
             prepStmt.setString(5, address.getCountry());
+            return prepStmt;
+        }, keyHolder);
 
-            int affectedRows = prepStmt.executeUpdate();
-
-            try (ResultSet generatedKeys = prepStmt.getGeneratedKeys()) {
-                if(generatedKeys.next()) {
-                    address.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new RuntimeException("Creating address failed, no ID obtained.");
-                }
-            }
-            return address;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error adding address: " + e.getMessage(), e);
-        }
+        address.setId(Objects.requireNonNull(keyHolder.getKey(), "No id returned for new address").intValue());
+        return address;
     }
 
-    public DBitem getById (int id) {
-
-        String selectSql = "SELECT * FROM addresses WHERE id = ?";
-        Address resultAddress = null;
-
-        try(PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-            prepStmt.setInt(1, id);
-
-            try (ResultSet selectResults = prepStmt.executeQuery()) {
-                if(selectResults.next()) {
-                    resultAddress = new Address(selectResults.getInt("id"),
-                            selectResults.getString("street"),
-                            selectResults.getString("houseNumber"),
-                            selectResults.getString("postalCode"),
-                            selectResults.getString("city"),
-                            selectResults.getString("country"));
-                } else {
-                    throw new RuntimeException("Creating address failed, no ID obtained.");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching address: " + e.getMessage(), e);
-        }
-
-        return resultAddress;
+    /**
+     * @return the address, or {@code null} if there is none with this id
+     */
+    @Override
+    public DBitem getById(int id) {
+        List<Address> results = jdbcTemplate.query(SELECT_BY_ID_SQL, this::mapRow, id);
+        return results.isEmpty() ? null : results.get(0);
     }
 
-    public boolean update (DBitem item) {
-
-        if(!(item instanceof Address address)) {
+    @Override
+    public boolean update(DBitem item) {
+        if (!(item instanceof Address address)) {
             throw new IllegalArgumentException("Expected an Address, got: " + item.getClass());
         }
 
-        String updateSql = "UPDATE addresses SET street = ?, houseNumber = ?, postalCode = ?, city = ?, country = ?";
+        int affectedRows = jdbcTemplate.update(UPDATE_SQL,
+                address.getStreet(), address.getHouseNumber(), address.getPostalCode(),
+                address.getCity(), address.getCountry(), address.getId());
 
-        try(PreparedStatement prepStmt = connection.prepareStatement(updateSql)) {
-            prepStmt.setString(1, address.getStreet());
-            prepStmt.setString(2, address.getHouseNumber());
-            prepStmt.setString(3, address.getPostalCode());
-            prepStmt.setString(4, address.getCity());
-            prepStmt.setString(5, address.getCountry());
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            if (affectedRows == 0) {
-                throw new RuntimeException("Update failed, no address found with id: " + address.getId());
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error updating address: " + e.getMessage(), e);
+        if (affectedRows == 0) {
+            throw new NoSuchElementException("Update failed, no address found with id: " + address.getId());
         }
         return true;
     }
 
-    public boolean delete (int id) {
-
-        String deleteSql = "DELETE FROM addresses WHERE id = ?";
-
-        try(PreparedStatement prepStmt = connection.prepareStatement(deleteSql)) {
-            prepStmt.setInt(1, id);
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            if (affectedRows == 0) {
-                throw new RuntimeException("Deletion failed, no address found with id: " + id);
-            } else {
-                return true;
-        }
-    } catch (SQLException e) {
-            throw new RuntimeException("Error deleting address: " + e.getMessage(), e);
-        }
+    @Override
+    public boolean delete(int id) {
+        return jdbcTemplate.update(DELETE_SQL, id) > 0;
     }
 
-    public Address isExisting (Address incomingAddress) {
+    /**
+     * Looks for a saved address with exactly the same fields.
+     *
+     * @param incomingAddress the address to look for
+     * @return the saved address (with its id and the existing flag set), or the incoming address
+     *         unchanged if no such address is saved yet
+     */
+    public Address isExisting(Address incomingAddress) {
+        List<Address> results = jdbcTemplate.query(SELECT_SAME_SQL, this::mapRow,
+                incomingAddress.getStreet(), incomingAddress.getHouseNumber(), incomingAddress.getPostalCode(),
+                incomingAddress.getCity(), incomingAddress.getCountry());
 
-        String selectSql = "SELECT * FROM addresses WHERE street=?, houseNumber=?, postalCode=?, city=?, country=?";
-
-        try(PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-
-            prepStmt.setString(1, incomingAddress.getStreet());
-            prepStmt.setString(2, incomingAddress.getHouseNumber());
-            prepStmt.setString(3, incomingAddress.getPostalCode());
-            prepStmt.setString(4, incomingAddress.getCity());
-            prepStmt.setString(5, incomingAddress.getCountry());
-
-            try (ResultSet selectResults = prepStmt.executeQuery()) {
-                if(selectResults.next()) {
-                    incomingAddress = (Address) getById(selectResults.getInt("id"));
-                    incomingAddress.setExistingFlag(true);
-                } //else {
-                    //add(incomingAddress);
-                    //return false;
-                //}
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching address: " + e.getMessage(), e);
+        if (results.isEmpty()) {
+            return incomingAddress;
         }
+        Address existing = results.get(0);
+        existing.setExistingFlag(true);
+        return existing;
+    }
 
-    return incomingAddress;
+    private Address mapRow(ResultSet rs, int rowNum) throws SQLException {
+        return new Address(rs.getInt("id"),
+                rs.getString("street"),
+                rs.getString("houseNumber"),
+                rs.getString("postalCode"),
+                rs.getString("city"),
+                rs.getString("country"));
     }
 }

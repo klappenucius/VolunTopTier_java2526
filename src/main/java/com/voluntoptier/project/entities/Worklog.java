@@ -3,13 +3,30 @@ package com.voluntoptier.project.entities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * One entry of logged work on a project assignment, waiting for or already given approval.
+ */
 public class Worklog extends DBitem {
     private ProjectAssignment projectAssignment;
     private LocalDate date;
     private int hours;
     private String description;
     private WorklogStatus status;
+    private LocalDateTime submittedAt;
+    private String approvedBy;
+    private LocalDateTime resolvedAt;
 
+    /**
+     * Creates a work log; {@code submittedAt} is set to now and can be overwritten when
+     * the work log is loaded from the database.
+     *
+     * @param id                database id (0 for a work log not saved yet)
+     * @param projectAssignment the assignment the work was done on
+     * @param date              the day the work was done
+     * @param hours             number of hours worked
+     * @param description       optional description of the work
+     * @param status            approval status
+     */
     public Worklog(int id, ProjectAssignment projectAssignment, LocalDate date, int hours, String description,
                    WorklogStatus status) {
         super(id);
@@ -18,6 +35,7 @@ public class Worklog extends DBitem {
         this.hours = hours;
         this.description = description;
         this.status = status;
+        this.submittedAt = LocalDateTime.now();
     }
 
     public ProjectAssignment getProjectAssignment() {
@@ -60,6 +78,30 @@ public class Worklog extends DBitem {
         this.status = status;
     }
 
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public String getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(String approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    public LocalDateTime getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(LocalDateTime resolvedAt) {
+        this.resolvedAt = resolvedAt;
+    }
+
     @Override
     public String toString() {
         return "Worklog{" +
@@ -72,7 +114,8 @@ public class Worklog extends DBitem {
                 '}';
     }
 
+    @Override
     public void print() {
-        System.out.println(this.toString());
+        System.out.println(this);
     }
 }

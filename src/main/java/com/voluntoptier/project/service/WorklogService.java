@@ -5,23 +5,33 @@ import com.voluntoptier.project.entities.ProjectAssignment;
 import com.voluntoptier.project.entities.Worklog;
 import com.voluntoptier.project.entities.WorklogStatus;
 import com.voluntoptier.project.repository.WorklogCrud;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
+/**
+ * Business rules for logging work and approving or rejecting it.
+ * Each public write method runs in one database transaction: the work log and the assignment's
+ * hours are saved together, or (if anything fails) not at all.
+ */
+@Service
 public class WorklogService {
     private static final String ENTITY_TYPE = "Worklog";
 
-    private final Connection connection;
     private final WorklogCrud worklogCrud;
     private final ChangeLogService changeLogService;
     private final ProjectAssignmentService projectAssignmentService;
 
-    public WorklogService(Connection connection, WorklogCrud worklogCrud,
-                          ChangeLogService changeLogService, ProjectAssignmentService projectAssignmentService) {
-        this.connection = connection;
+    /**
+     * @param worklogCrud              data access for work logs
+     * @param changeLogService         records every change
+     * @param projectAssignmentService updates the assignment's pending and approved hours
+     */
+    public WorklogService(WorklogCrud worklogCrud, ChangeLogService changeLogService,
+                          ProjectAssignmentService projectAssignmentService) {
         this.worklogCrud = worklogCrud;
         this.changeLogService = changeLogService;
         this.projectAssignmentService = projectAssignmentService;
@@ -45,16 +55,18 @@ public class WorklogService {
         }
     }
 
-    private void logTheChange(Change change) {
-        try {
-            changeLogService.logChange(change);
-        } catch (RuntimeException e) {
-            System.err.println("Failed to write change log entry for "
-                    + change.getEntityType() + " id=" + change.getEntityId()
-                    + ": " + e.getMessage());
+    private static void requirePending(Worklog worklog) {
+        if (worklog.getStatus() != WorklogStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Work log " + worklog.getId() + " is already " + worklog.getStatus());
         }
     }
 
+    /**
+     * @param id the work log id
+     * @return the work log
+     * @throws NoSuchElementException if there is no work log with this id
+     */
     public Worklog fetchWorkLog(int id) {
         Worklog workLog = (Worklog) worklogCrud.getById(id);
         if (workLog == null) {
@@ -63,129 +75,78 @@ public class WorklogService {
         return workLog;
     }
 
-    public Worklog submitWorklog (Worklog worklog, String submittedBy) {
+    /**
+     * Saves a new work log as PENDING and adds its hours to the assignment's pending hours.
+     *
+     * @param worklog     the new work log
+     * @param submittedBy username of the volunteer submitting it
+     * @return the saved work log, with its new id
+     */
+    @Transactional
+    public Worklog submitWorklog(Worklog worklog, String submittedBy) {
         validate(worklog);
 
-        ProjectAssignment projectAssignment = worklog.getProjectAssignment();
-
-        try {
-            connection.setAutoCommit(false);
-
-            worklogCrud.add(worklog);
-            projectAssignmentService.adjustHours(projectAssignment, worklog.getHours(), 0);
-
-            connection.commit();
-        } catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackEx) {
-                System.err.println("Rollback also failed: " + rollbackEx.getMessage());
-            }
-
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException("Failed to submit work log", e);
-            }
-        } finally {
-            try {
-                connection.setAutoCommit(true);
-            } catch (SQLException e) {
-                throw new RuntimeException("Failed to restore auto-commit state", e);
-            }
+        ProjectAssignment projectAssignment =
+                projectAssignmentService.fetchProjectAssignmentById(worklog.getProjectAssignment().getId());
+        if (!projectAssignment.isActive()) {
+            throw new IllegalStateException("Cannot log work on an inactive assignment");
         }
-        logTheChange(new Change(
-                ENTITY_TYPE, worklog.getId(), "CREATE",
-                null, null, worklog.toString(), submittedBy));
+        worklog.setProjectAssignment(projectAssignment);
+        worklog.setStatus(WorklogStatus.PENDING);
+        worklog.setSubmittedAt(LocalDateTime.now());
+        worklog.setApprovedBy(null);
+        worklog.setResolvedAt(null);
 
+        worklogCrud.add(worklog);
+        projectAssignmentService.adjustHours(projectAssignment, worklog.getHours(), 0);
+
+        changeLogService.logChangeSafely(new Change(
+                ENTITY_TYPE, worklog.getId(), "CREATE", null, null, worklog.toString(), submittedBy));
         return worklog;
-
     }
 
-    public Worklog approveWorklog (int id, String approver){
-        Worklog worklog = (Worklog) worklogCrud.getById(id);
+    /**
+     * Approves a pending work log and moves its hours from pending to approved.
+     *
+     * @param id       the work log id
+     * @param approver username of the moderator approving it
+     * @return the approved work log
+     */
+    @Transactional
+    public Worklog approveWorklog(int id, String approver) {
+        Worklog worklog = fetchWorkLog(id);
+        requirePending(worklog);
 
         worklog.setStatus(WorklogStatus.APPROVED);
-        ProjectAssignment projectAssignment = worklog.getProjectAssignment();
+        worklog.setApprovedBy(approver);
+        worklog.setResolvedAt(LocalDateTime.now());
 
-        try {
-            connection.setAutoCommit(false);
+        worklogCrud.update(worklog);
+        projectAssignmentService.adjustHours(worklog.getProjectAssignment(), -worklog.getHours(), worklog.getHours());
 
-            worklogCrud.update(worklog);
-            projectAssignmentService.adjustHours(projectAssignment, -worklog.getHours(), worklog.getHours());
-
-            connection.commit();
-        } catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackEx) {
-                System.err.println("Rollback also failed: " + rollbackEx.getMessage());
-            }
-
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException("Failed to submit work log", e);
-            }
-        } finally {
-            try {
-                connection.setAutoCommit(true);
-            } catch (SQLException e) {
-                throw new RuntimeException("Failed to restore auto-commit state", e);
-            }
-        }
-
-        logTheChange(new Change(
-                ENTITY_TYPE, worklog.getId(), "CREATE",
-                null, null, worklog.toString(), approver));
-
+        changeLogService.logChangeSafely(new Change(
+                ENTITY_TYPE, id, "UPDATE", "status",
+                WorklogStatus.PENDING.name(), WorklogStatus.APPROVED.name(), approver));
         return worklog;
     }
 
-    public boolean rejectWorklog (int id, String approver){
-
+    /**
+     * Rejects a pending work log: deletes it and removes its hours from the pending hours.
+     *
+     * @param id       the work log id
+     * @param approver username of the moderator rejecting it
+     * @return {@code true} if the work log was deleted
+     */
+    @Transactional
+    public boolean rejectWorklog(int id, String approver) {
         Worklog existing = fetchWorkLog(id);
-        ProjectAssignment projectAssignment = existing.getProjectAssignment();
-        boolean deleted = false;
+        requirePending(existing);
 
-        try {
-            connection.setAutoCommit(false);
+        boolean deleted = worklogCrud.delete(id);
+        projectAssignmentService.adjustHours(existing.getProjectAssignment(), -existing.getHours(), 0);
 
-            deleted = worklogCrud.delete(id);
-            projectAssignmentService.adjustHours(projectAssignment, -existing.getHours(), 0);
-
-            connection.commit();
-
-            logTheChange(new Change(
-                    ENTITY_TYPE, id, "DELETE",
-                    null, existing.toString(), null, approver));
-
-        } catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (Exception e2) {
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackEx) {
-                    System.err.println("Rollback also failed: " + rollbackEx.getMessage());
-                }
-
-                if (e instanceof RuntimeException) {
-                    throw (RuntimeException) e;
-                } else {
-                    throw new RuntimeException("Failed to submit work log", e);
-                }
-            } finally {
-                try {
-                    connection.setAutoCommit(true);
-                } catch (SQLException e3) {
-                    throw new RuntimeException("Failed to restore auto-commit state", e);
-                }
-            }
-        }
-
+        changeLogService.logChangeSafely(new Change(
+                ENTITY_TYPE, id, "DELETE", null, existing.toString(), null, approver));
         return deleted;
     }
-
-
 }

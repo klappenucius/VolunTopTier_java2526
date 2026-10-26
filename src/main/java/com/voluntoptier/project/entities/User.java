@@ -2,6 +2,10 @@ package com.voluntoptier.project.entities;
 
 import java.time.LocalDate;
 
+/**
+ * A person using the app: a volunteer, moderator or admin.
+ * Hours are not stored on the user; a user's totals are summed from their project assignments.
+ */
 public class User extends DBitem {
     protected String firstName;
     protected String lastName;
@@ -11,7 +15,32 @@ public class User extends DBitem {
     protected Address address;
     protected String email;
     protected Role role;
-    protected HoursWorked totalHoursWorked;
+
+    /**
+     * Creates a user.
+     *
+     * @param id          database id (0 for a user not saved yet)
+     * @param firstName   first name
+     * @param lastName    last name
+     * @param username    unique login name
+     * @param oib         unique personal identification number
+     * @param dateOfBirth date of birth
+     * @param address     home address
+     * @param email       e-mail address
+     * @param role        role that decides what the user may do
+     */
+    public User(int id, String firstName, String lastName, String username, String oib, LocalDate dateOfBirth,
+                Address address, String email, Role role) {
+        super(id);
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.username = username;
+        this.oib = oib;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.email = email;
+        this.role = role;
+    }
 
     public String getFirstName() {
         return firstName;
@@ -77,38 +106,16 @@ public class User extends DBitem {
         this.role = role;
     }
 
-    public HoursWorked getTotalHoursWorked() {
-        return totalHoursWorked;
-    }
-
-    public void setTotalHoursWorked(HoursWorked totalHoursWorked) {
-        this.totalHoursWorked = totalHoursWorked;
-    }
-
-    public User(int id, String firstName, String lastName, String username, String oib, LocalDate dateOfBirth, Address address, String email, Role role) {
-        super(id);
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.username = username;
-        this.oib = oib;
-        this.dateOfBirth = dateOfBirth;
-        this.address = address;
-        this.email = email;
-        this.role = role;
-        this.totalHoursWorked = new HoursWorked(0, 0);
-    }
-
+    @Override
     public String toString() {
-       String output = firstName +
-               lastName +
-               ", date of birth: " + dateOfBirth +
-               ", email: " + email +
-               ", total hours worked: " + totalHoursWorked;
-       return output;
+        return firstName + " " + lastName +
+                ", date of birth: " + dateOfBirth +
+                ", email: " + email +
+                ", role: " + role;
     }
 
+    @Override
     public void print() {
-        System.out.println(this.toString());
+        System.out.println(this);
     }
-
 }

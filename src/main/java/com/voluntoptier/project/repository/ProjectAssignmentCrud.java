@@ -1,225 +1,156 @@
 package com.voluntoptier.project.repository;
 
-import com.voluntoptier.project.entities.*;
-import com.voluntoptier.project.utils.DatabaseUtil;
+import com.voluntoptier.project.entities.DBitem;
+import com.voluntoptier.project.entities.HoursWorked;
+import com.voluntoptier.project.entities.Project;
+import com.voluntoptier.project.entities.ProjectAssignment;
+import com.voluntoptier.project.entities.User;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
-public final class ProjectAssignmentCrud implements Crud{
-    private Connection connection;
+/**
+ * Data access for the {@code projectAssignments} table (which volunteer works on which project).
+ */
+@Repository
+public non-sealed class ProjectAssignmentCrud implements Crud {
+
+    private static final String INSERT_SQL =
+            "INSERT INTO projectAssignments (project_id, user_id, assignedBy_id, assignedDate, assignedTime, "
+                    + "hoursNeeded, approvedHours, pendingApproval, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String SELECT_BY_ID_SQL = "SELECT * FROM projectAssignments WHERE id = ?";
+    private static final String SELECT_BY_USER_SQL = "SELECT * FROM projectAssignments WHERE user_id = ?";
+    private static final String SELECT_BY_USER_AND_PROJECT_SQL =
+            "SELECT * FROM projectAssignments WHERE user_id = ? AND project_id = ?";
+    private static final String SUM_HOURS_BY_USER_SQL =
+            "SELECT COALESCE(SUM(approvedHours), 0) AS approved, COALESCE(SUM(pendingApproval), 0) AS pending "
+                    + "FROM projectAssignments WHERE user_id = ?";
+    private static final String UPDATE_SQL =
+            "UPDATE projectAssignments SET project_id = ?, user_id = ?, assignedBy_id = ?, assignedDate = ?, "
+                    + "assignedTime = ?, hoursNeeded = ?, approvedHours = ?, pendingApproval = ?, isActive = ? "
+                    + "WHERE id = ?";
+    private static final String DELETE_SQL = "DELETE FROM projectAssignments WHERE id = ?";
+
+    private final JdbcTemplate jdbcTemplate;
     private final UserCrud userCrud;
     private final ProjectCrud projectCrud;
 
-    public ProjectAssignmentCrud(Connection connection, UserCrud userCrud, ProjectCrud projectCrud) {
-        this.connection = connection;
+    /**
+     * @param jdbcTemplate Spring's JDBC helper, injected automatically
+     * @param userCrud     used to load the volunteer and the person who assigned them
+     * @param projectCrud  used to load the project
+     */
+    public ProjectAssignmentCrud(JdbcTemplate jdbcTemplate, UserCrud userCrud, ProjectCrud projectCrud) {
+        this.jdbcTemplate = jdbcTemplate;
         this.userCrud = userCrud;
         this.projectCrud = projectCrud;
     }
 
+    @Override
     public DBitem add(DBitem item) {
-        if (!(item instanceof ProjectAssignment projectAssignment)) {
+        if (!(item instanceof ProjectAssignment pa)) {
             throw new IllegalArgumentException("Expected a ProjectAssignment, got: " + item.getClass());
         }
 
-        String insertSql = "INSERT INTO projectAssignments (assignedDate, assignedTime, assignedBy_id, project_id, user_id, hoursNeeded, approvedHours, pendingApproval, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement prepStmt = connection.prepareStatement(INSERT_SQL, new String[]{"ID"});
+            prepStmt.setInt(1, pa.getProject().getId());
+            prepStmt.setInt(2, pa.getUser().getId());
+            prepStmt.setInt(3, pa.getAssignedby().getId());
+            prepStmt.setObject(4, pa.getDate());
+            prepStmt.setObject(5, pa.getTime());
+            prepStmt.setInt(6, pa.getExpectedHours());
+            prepStmt.setInt(7, pa.getHoursWorked().approvedHours());
+            prepStmt.setInt(8, pa.getHoursWorked().pendingApproval());
+            prepStmt.setBoolean(9, pa.isActive());
+            return prepStmt;
+        }, keyHolder);
 
-        try (PreparedStatement prepStmt = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+        pa.setId(Objects.requireNonNull(keyHolder.getKey(), "No id returned for new assignment").intValue());
+        return pa;
+    }
 
-            prepStmt.setDate(1, Date.valueOf(projectAssignment.getDate()));
-            prepStmt.setTime(2, Time.valueOf(projectAssignment.getTime()));
-            prepStmt.setInt(3, projectAssignment.getAssignedby().getId());
-            prepStmt.setInt(4, projectAssignment.getProject().getId());
-            prepStmt.setInt(5, projectAssignment.getUser().getId());
-            prepStmt.setInt(6, projectAssignment.getExpectedHours());
-            prepStmt.setInt(7, projectAssignment.getHoursWorked().approvedHours());
-            prepStmt.setInt(8, projectAssignment.getHoursWorked().pendingApproval());
-            prepStmt.setBoolean(9, projectAssignment.isActive());
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            //if (affectedRows > 0) {
-            //    System.out.println("Incentive added successfully");
-            //}
-
-            try (ResultSet generatedKeys = prepStmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    projectAssignment.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new RuntimeException("Creating project assignment failed, no ID obtained.");
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error adding project assignment: " + e.getMessage(), e);
-        }
-
-        return projectAssignment;
-
-    };
-
+    /**
+     * @return the assignment, or {@code null} if there is none with this id
+     */
+    @Override
     public DBitem getById(int id) {
+        List<ProjectAssignment> results = jdbcTemplate.query(SELECT_BY_ID_SQL, this::mapRow, id);
+        return results.isEmpty() ? null : results.get(0);
+    }
 
-        String selectSql = "SELECT * FROM  projectAssignments WHERE id = ?";
-        ProjectAssignment resultProjectAssignment = null;
+    /**
+     * @param userId the volunteer's id
+     * @return all assignments of this volunteer, active and inactive
+     */
+    public List<ProjectAssignment> getByUserId(int userId) {
+        return jdbcTemplate.query(SELECT_BY_USER_SQL, this::mapRow, userId);
+    }
 
-        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-            prepStmt.setInt(1, id);
+    /**
+     * @return the assignment of this volunteer to this project, or {@code null} if there is none
+     */
+    public ProjectAssignment fetchByUserAndProject(User user, Project project) {
+        List<ProjectAssignment> results =
+                jdbcTemplate.query(SELECT_BY_USER_AND_PROJECT_SQL, this::mapRow, user.getId(), project.getId());
+        return results.isEmpty() ? null : results.get(0);
+    }
 
-            try (ResultSet selectResults = prepStmt.executeQuery()) {
-                if (selectResults.next()) {
+    /**
+     * @param userId the volunteer's id
+     * @return the volunteer's approved and pending hours summed over all their assignments
+     */
+    public HoursWorked getTotalHoursForUser(int userId) {
+        return jdbcTemplate.queryForObject(SUM_HOURS_BY_USER_SQL,
+                (rs, rowNum) -> new HoursWorked(rs.getInt("approved"), rs.getInt("pending")), userId);
+    }
 
-                    HoursWorked hoursWorked = new HoursWorked(
-                            selectResults.getInt("approvedHours"),
-                            selectResults.getInt("pendingApproval")
-                    );
-
-                    resultProjectAssignment = new ProjectAssignment(selectResults.getInt("id"),
-                            selectResults.getDate("assignedDate").toLocalDate(),
-                            selectResults.getTime("assignedTime").toLocalTime(),
-                            (User) userCrud.getById(selectResults.getInt("assigned_id")),
-                            (Project) projectCrud.getById(selectResults.getInt("project_id")),
-                            (User) userCrud.getById(selectResults.getInt("user_id")),
-                            selectResults.getInt("hoursNeeded"),
-                            hoursWorked,
-                            selectResults.getBoolean("isActive")
-                    );
-                } else {
-                    throw new RuntimeException("Creating project assignment failed, no ID obtained.");
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
-        }
-        return resultProjectAssignment;
-    };
-
-    public List<ProjectAssignment> getByUserId(int UserId) {
-
-        String selectSql = "SELECT * FROM  projectAssignments WHERE user_id = ?";
-        List<ProjectAssignment> results = new ArrayList<>();
-
-        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-            prepStmt.setInt(1, UserId);
-
-            try (ResultSet selectResults = prepStmt.executeQuery()) {
-                while (selectResults.next()) {
-
-                    HoursWorked hoursWorked = new HoursWorked(
-                            selectResults.getInt("approvedHours"),
-                            selectResults.getInt("pendingApproval")
-                    );
-
-                    ProjectAssignment pa = new ProjectAssignment(
-                            selectResults.getInt("id"),
-                            selectResults.getDate("assignedDate").toLocalDate(),
-                            selectResults.getTime("assignedTime").toLocalTime(),
-                            (User) userCrud.getById(selectResults.getInt("assigned_id")),
-                            (Project) projectCrud.getById(selectResults.getInt("project_id")),
-                            (User) userCrud.getById(selectResults.getInt("user_id")),
-                            selectResults.getInt("hoursNeeded"),
-                            hoursWorked,
-                            selectResults.getBoolean("isActive")
-                    );
-
-                    results.add(pa);
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
-        }
-        return results;
-    };
-
-    public boolean update(DBitem item){
-        // u ovoj funkciji se samo prepisuju sve vrijednosti postojećeg objekta u bazu;
-        // stvarna promjena vrijednosti odradit će se u drugim funkcijama
-
-        if (!(item instanceof ProjectAssignment projectAssignment)) {
+    @Override
+    public boolean update(DBitem item) {
+        if (!(item instanceof ProjectAssignment pa)) {
             throw new IllegalArgumentException("Expected a ProjectAssignment, got: " + item.getClass());
         }
 
-        String updateSql = "UPDATE projectAssignments SET date = ? AND time = ? AND project_id = ? AND user_id = ? AND assignedBy_id = ? AND hoursNeeded = ? AND approvedHours = ? AND pendingApproval = ? AND isActive = ? WHERE id = ?";
+        int affectedRows = jdbcTemplate.update(UPDATE_SQL,
+                pa.getProject().getId(), pa.getUser().getId(), pa.getAssignedby().getId(),
+                pa.getDate(), pa.getTime(), pa.getExpectedHours(),
+                pa.getHoursWorked().approvedHours(), pa.getHoursWorked().pendingApproval(),
+                pa.isActive(), pa.getId());
 
-        try (PreparedStatement prepStmt = connection.prepareStatement(updateSql)) {
-            prepStmt.setDate(1, Date.valueOf(projectAssignment.getDate()));
-            prepStmt.setTime(2, Time.valueOf(projectAssignment.getTime()));
-            prepStmt.setInt(3, projectAssignment.getProject().getId());
-            prepStmt.setInt(4, projectAssignment.getUser().getId());
-            prepStmt.setInt(5, projectAssignment.getAssignedby().getId());
-            prepStmt.setInt(6, projectAssignment.getExpectedHours());
-            prepStmt.setBoolean(7, projectAssignment.isActive());
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            if (affectedRows == 0) {
-                throw new RuntimeException("Update failed, no project assignment found with id: " + projectAssignment.getId());
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error updating project assignment: " + e.getMessage(), e);
+        if (affectedRows == 0) {
+            throw new NoSuchElementException("Update failed, no project assignment found with id: " + pa.getId());
         }
-
         return true;
     }
 
+    @Override
     public boolean delete(int id) {
-
-        String deleteSql = "DELETE FROM projectAssignments WHERE id = ?";
-
-        try (PreparedStatement prepStmt = connection.prepareStatement(deleteSql)) {
-
-            prepStmt.setInt(1, id);
-
-            int affectedRows = prepStmt.executeUpdate();
-
-            if (affectedRows == 0) {
-                throw new RuntimeException("Deletion failed, no project assignment found with id: " + id);
-            } else {
-                return true;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error deleting project assignment: " + e.getMessage(), e);
-        }
+        return jdbcTemplate.update(DELETE_SQL, id) > 0;
     }
 
-    public ProjectAssignment fetchByUserAndProject(User user, Project project) {
+    private ProjectAssignment mapRow(ResultSet rs, int rowNum) throws SQLException {
+        HoursWorked hoursWorked = new HoursWorked(rs.getInt("approvedHours"), rs.getInt("pendingApproval"));
 
-        String selectSql = "SELECT * FROM projectAssignments WHERE user_id=? AND project_id=?";
-        ProjectAssignment fetchedProjectAssignment = null;
-
-        try (PreparedStatement prepStmt = connection.prepareStatement(selectSql)) {
-            prepStmt.setInt(1, user.getId());
-            prepStmt.setInt(2, project.getId());
-
-            try (ResultSet selectResults = prepStmt.executeQuery()) {
-                if (selectResults.next()) {
-                    HoursWorked hoursWorked = new HoursWorked(
-                            selectResults.getInt("approvedHours"),
-                            selectResults.getInt("pendingApproval")
-                    );
-
-                    fetchedProjectAssignment = new ProjectAssignment(selectResults.getInt("id"),
-                            selectResults.getObject("date", LocalDate.class),
-                            selectResults.getObject("time", LocalTime.class),
-                            (User) userCrud.getById(selectResults.getInt("id")),
-                            (Project) projectCrud.getById(selectResults.getInt("id")),
-                            (User) userCrud.getById(selectResults.getInt("id")),
-                            selectResults.getInt("expectedHours"),
-                            hoursWorked,
-                            selectResults.getBoolean("isActive")
-                            );
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching project assignment: " + e.getMessage(), e);
-        }
-        return fetchedProjectAssignment;
+        return new ProjectAssignment(
+                rs.getInt("id"),
+                rs.getObject("assignedDate", LocalDate.class),
+                rs.getObject("assignedTime", LocalTime.class),
+                (User) userCrud.getById(rs.getInt("assignedBy_id")),
+                (Project) projectCrud.getById(rs.getInt("project_id")),
+                (User) userCrud.getById(rs.getInt("user_id")),
+                rs.getInt("hoursNeeded"),
+                hoursWorked,
+                rs.getBoolean("isActive"));
     }
 }
